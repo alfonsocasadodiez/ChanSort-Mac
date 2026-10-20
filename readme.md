@@ -1,96 +1,113 @@
-Links
+ChanSort for Mac
+================
+**Reorder your TV's channel list on your Mac.**  
+A native macOS app for Apple Silicon and Intel Macs, based on [ChanSort](https://github.com/PredatH0r/ChanSort).
+
+[Download](https://github.com/alfonsocasadodiez/ChanSort-Mac/releases/latest) |
+[All releases](https://github.com/alfonsocasadodiez/ChanSort-Mac/releases) |
+[Supported TVs](#supported-tv-models) |
+[How to use](#how-to-use) |
+[Build from source](#build-from-source) |
+[License](#license-gplv3)
+
+![ChanSort for Mac (dark appearance)](docs/macos/chansort-mac-dark.png)
+
+About
 -----
-[![EN](https://chansort.com/img/flag_en_24.png)](https://github.com/PredatH0r/ChanSort/blob/master/readme.md)
-[![DE](https://chansort.com/img/flag_de_16.png)](https://github.com/PredatH0r/ChanSort/blob/master/readme_de.md)
-[![PL](https://chansort.com/img/flag_pl_16.png)](https://github.com/PredatH0r/ChanSort/blob/master/readme_pl.md)
-[![TR](https://chansort.com/img/flag_tr_16.png)](https://github.com/PredatH0r/ChanSort/blob/master/readme_tr-TR.md) |
-[Download (Windows)](https://github.com/PredatH0r/ChanSort/releases) | 
-[Download (macOS)](https://github.com/alfonsocasadodiez/ChanSort-Mac/releases/latest) | 
-[Documentation](https://github.com/PredatH0r/ChanSort/wiki) |
-[Forum](https://github.com/PredatH0r/ChanSort/issues) | 
-[E-Mail](mailto:horst@beham.biz)
+Most modern TVs can export their channel list to a USB stick. ChanSort for Mac opens that file, lets you put the
+channels in the order you want, and saves it back so the TV can import it again.
+It supports [file formats from numerous brands](#supported-tv-models) and can copy the channel order and favorites
+from one file to another, even between different TV models and brands.
 
-ChanSort for macOS
-------------------
-**A native Mac version of ChanSort**, for Apple Silicon and Intel Macs. It uses the same file format support as
-ChanSort for Windows, with a user interface designed for macOS (light and dark appearance, system accent color).
+Download and installation
+-------------------------
+**[Download the latest version](https://github.com/alfonsocasadodiez/ChanSort-Mac/releases/latest)**
 
-![ChanSort for macOS (dark appearance)](docs/macos/chansort-mac-dark.png)
+| Your Mac | File |
+|---|---|
+| Apple Silicon (M1, M2, M3, M4, …) | `ChanSort_<version>_macOS_AppleSilicon.dmg` |
+| Intel | `ChanSort_<version>_macOS_Intel.dmg` |
 
-**[Download the latest macOS version](https://github.com/alfonsocasadodiez/ChanSort-Mac/releases/latest)**
-(`…_macOS_AppleSilicon.dmg` for Macs with an Apple chip, `…_macOS_Intel.dmg` for Intel Macs; macOS 12 or later, nothing else to install)
+(Apple menu → About This Mac shows which chip your Mac has. A `.zip` of each version is also available.)
 
-What's in the macOS version:
-- **Mac-style window**: sidebar with your TV's channel lists (TV, radio, satellite, cable, IP, favorites) and the
-  favorite lists, a unified toolbar, search fields, and button bars below each table
-- **Sorted list and all channels side by side**: add channels with double-click / ↵ / +, remove with ⌫ / −,
-  move them with ⌘↑ / ⌘↓, type a new number or name directly in the sorted list
-- **Set number, sort by name, renumber without gaps, add all unsorted channels** with one click
-- **Favorites, parental lock, skip and hide** flags, including TVs with sorted and mixed-source favorite lists
-- **Reference lists**: copy the order from another TV file or a ChanSort .txt/.csv list (17 sample lists are included),
-  and save your own reference lists
-- **Dialogs as macOS sheets**, menu bar with keyboard shortcuts, drag & drop of files onto the window or the Dock icon,
-  recent files, character set selection, file information
+1. Open the .dmg and drag **ChanSort** into your **Applications** folder.
+2. The app is not notarized by Apple, so macOS blocks it the first time. To allow it:
+   - open it once, then go to **System Settings → Privacy & Security** and click **Open Anyway** (macOS 15 and later), or
+   - right-click the app in Applications and choose **Open** (macOS 14 and earlier), or
+   - run `xattr -dr com.apple.quarantine /Applications/ChanSort.app` in Terminal.
+3. Start ChanSort and open your channel list.
+
+Requires macOS 12 (Monterey) or later. Nothing else needs to be installed.
+
+Features
+--------
+- **Mac-style window**: a sidebar with your TV's channel lists (TV, radio, satellite, cable, IP, favorites) and
+  favorite lists, a unified toolbar, search fields, and button bars below each table; light and dark appearance
+  and your system accent color
+- **Sorted list and all channels side by side**: add channels with double-click, ↵ or +, remove them with ⌫ or −,
+  move them with ⌘↑ / ⌘↓, and type a new number or name directly in the sorted list
+- **Set number, sort by name, renumber without gaps, add all unsorted channels**, each with one click,
+  on several selected channels at once
+- **Favorites, parental lock, skip and hide**, including TVs with separately sorted or mixed-source favorite lists
+- **Reference lists**: copy the channel order from another TV's file or from a ChanSort .txt/.csv list
+  (17 ready-made lists for common satellite and cable providers are included), and save your own
+- **Rename channels**, choose the character set for older TVs, and view details about the loaded file
+- Drag & drop files onto the window or the Dock icon, recent files, dialogs as sheets, full keyboard support
 - A `.bak` copy of the original file is kept when saving
 
 | Light appearance | Start dialog |
 |---|---|
-| ![ChanSort for macOS (light appearance)](docs/macos/chansort-mac-light.png) | ![Start dialog shown as a sheet](docs/macos/chansort-mac-start-sheet.png) |
+| ![ChanSort for Mac (light appearance)](docs/macos/chansort-mac-light.png) | ![Start dialog](docs/macos/chansort-mac-start-sheet.png) |
 
-Keyboard shortcuts: ⌘O open, ⌘S save, ⇧⌘S save as, ⌘R apply reference list, ⌘I file information,
-⌘↑/⌘↓ move, ⌘⌫ remove, ⇧⌘N set number, ⌘E rename, ⌘1…⌘9 add to favorites A…I (⇧ to remove),
-⌘L / ⌘K / ⇧⌘H toggle lock / skip / hide, ⌥⌘1…9 switch channel list.
-
-**Installation**
-1. Open the .dmg and drag ChanSort into your Applications folder.
-2. The app is not notarized by Apple, so macOS blocks the first launch. Open it once, then go to
-   System Settings / Privacy & Security and click "Open Anyway" (on macOS 14 and earlier: right-click the app and choose "Open"),
-   or run `xattr -dr com.apple.quarantine /Applications/ChanSort.app` in Terminal.
-3. Open your channel list with File / Open, or drop the file onto the window.
-
-Not available on macOS (yet): drag & drop inside the tables, printing / Excel export, the LG "TV settings" dialog,
-user interface languages other than English.
-
-About ChanSort
---------------
-ChanSort is a Windows and macOS application that allows you to reorder your TV's channel list.  
-Most modern TVs can transfer channel lists via USB stick, which you can plug into your PC or Mac.  
-ChanSort supports [file formats from numerous brands](#supported-tv-models) and can copy program numbers and
-favorites from one file to another, even between different models and brands.
-
-![screenshot](http://beham.biz/chansort/ChanSort-en.png)
-
-Features
---------
-- Reorder channels (change numbers directly, move up/down, drag&drop, double-click)
-- Use another channel list as a reference to apply the same ordering
-- Multi-selection for editing multiple channels at once
-- Single-list view (showing assigned channels first and then all unassigned channels)
-- Side-by-side view of new/sorted list and original/complete list (similar to playlist and library)
-- Rename or delete channels
-- Manage favorites, parental lock, channel skipping (when zapping), channel hiding
-- User interface in English, German, Spanish, Turkish, Portuguese, Russian and Romanian
-- Unicode character support for channel names (Latin, Cyrillic, Greek, ...)
-
-NOT supported:
+Not supported:
 - adding new transponders or channels
 - changing tuner related properties of channels (ONID, TSID, SID, frequency, APID, VPID, ...)
+- not available in the Mac version yet: drag & drop inside the tables, printing / Excel export,
+  the LG "TV settings" dialog, user interface languages other than English
 
-Some features may not be available on all TV models and channel types (analog, digital, sat, cable, ...)
+Some features may not be available for all TV models and channel types (analog, digital, sat, cable, ...).
+
+How to use
+----------
+1. On your TV, export the channel list to a USB stick (look for "copy to USB", "export channel list" or similar
+   in the channel or installation settings).
+2. Plug the stick into your Mac and open the channel list file in ChanSort (**File → Open** or drag & drop).
+3. Choose how to start: keep the TV's current order, copy the order from a reference list, or start with an empty
+   list and add channels one by one.
+4. Arrange the channels in the **Sorted Channels** table. Channels from **All Channels** are added after the
+   channel selected in the sorted list.
+5. **Save** (⌘S). If some channels are not in the sorted list, ChanSort asks whether to append, hide or delete them.
+6. Import the file on your TV from the USB stick.
+
+Keyboard shortcuts
+------------------
+| Action | Shortcut |
+|---|---|
+| Open / Save / Save As | ⌘O / ⌘S / ⇧⌘S |
+| Apply reference list | ⌘R |
+| File information | ⌘I |
+| Add selected channels to the sorted list | ↵ or double-click (in All Channels) |
+| Remove from the sorted list | ⌫ (in Sorted Channels) or ⌘⌫ |
+| Move up / down | ⌘↑ / ⌘↓ |
+| Set number / Rename | ⇧⌘N / ⌘E |
+| Add to favorites A…I / remove from favorites | ⌘1…⌘9 / ⇧⌘1…⇧⌘9 |
+| Toggle parental lock / skip / hide | ⌘L / ⌘K / ⇧⌘H |
+| Switch channel list | ⌥⌘1…⌥⌘9 |
 
 ! USE AT YOUR OWN RISK !
 ------------------------
-Most of this software was written without support from TV manufacturers or access to any official 
+Most of this software was written without support from TV manufacturers or access to any official
 documentation about the file formats. It is solely based on analysing existing data files, trial and error.
 There is a chance of unwanted side-effects or even damage to your TV, as reported in 2 cases.
+Always keep a copy of your original channel list.
 
 Hisense is the only manufacturer who provided technical information and a test device.
 
-Supported TV models 
+Supported TV models
 -------------------
-ChanSort supports a large number of file formats, but it's impossible to tell for every brand and TV model 
-what file format it uses (with may even change with firmware updates).  
-This list gives some examples of what should be supported, but even if your model or brand is not in this list, 
+ChanSort supports a large number of file formats, but it's impossible to tell for every brand and TV model
+what file format it uses (which may even change with firmware updates).
+This list gives some examples of what should be supported, but even if your model or brand is not in this list,
 it may work anyway:
 - [Samsung](source/fileformats.md#samsung)
 - [LG](source/fileformats.md#lg)
@@ -110,41 +127,44 @@ it may work anyway:
 - [SAT>IP m3u](source/fileformats.md#m3u)
 - [Enigma2](source/fileformats.md#enigma2)
 
+Requirements
+------------
+- macOS 12 (Monterey) or later, on a Mac with Apple Silicon or an Intel processor
+- A USB stick or SD card to transfer the channel list between your TV and your Mac. A stick of 32 GB or less,
+  formatted as **MS-DOS (FAT32)** in Disk Utility, is STRONGLY recommended. (Some TVs write garbage to NTFS
+  and don't support exFAT at all.)
 
-System requirements
--------------------
-**Windows**:  
-- Windows 7 SP1, Windows 8.1, Windows 10 v1606 or later, Windows 11 (with x86, x64 or ARM CPU)
-- [Microsoft .NET Framework 4.8](https://dotnet.microsoft.com/download/dotnet-framework)
-- The .NET FW 4.8 does NOT work with Windows 7 without SP1, Windows 8 or Windows 10 prior to v1606
-
-**Linux**:  
-- wine (sudo apt-get install wine)
-- winetricks (sudo apt-get install winetricks)
-- start winetricks, select or create a wineprefix (32 bit or 64 bit), select
-  "Install Windows DLL or component" and install the "dotnet48" package and ignore dozens of message boxes
-- right-click on ChanSort.exe and select "open with", "all applications", "A wine application"  
-Last tested with Ubuntu 24.10, wine-9.0, winetricks 20240105
-
-Or using Docker: https://github.com/PredatH0r/ChanSort/issues/285
-
-**Mac**:  
-- macOS 12 (Monterey) or later, Apple Silicon or Intel. See [ChanSort for macOS](#chansort-for-macos) for download and installation.
-- Alternatively, the Windows version can be used in a Windows VM (Parallels, UTM, VMware Fusion).
-
-**Hardware**:
-- USB stick/SD-card to transfer the channel list between your TV and PC. A stick <= 32 GB with FAT32 file system 
-is STRONGLY recommended. (Some TVs write garbage to NTFS and don't support exFAT at all)
+Troubleshooting
+---------------
+- If a file can't be opened, make sure it is the file your TV exported (some TVs export several files or a folder;
+  see the [supported TV models](#supported-tv-models) for which file to open).
+- ChanSort writes a diagnostic log to `~/Library/Logs/ChanSort/ChanSort.log`, which is useful when reporting a problem.
+- Settings (recent files, character set, window size) are stored in `~/Library/Application Support/ChanSort/settings.json`.
 
 Build from source
 -----------------
-See [build.md](source/build.md)  
-macOS: install the [.NET 10 SDK](https://dotnet.microsoft.com/download) and run `source/ChanSort.Avalonia/build-macos.sh`
+Requirements: the [.NET 10 SDK](https://dotnet.microsoft.com/download) (e.g. `brew install dotnet`).
+
+- Run from source: `dotnet run --project source/ChanSort.Avalonia`
+- Build the app bundles for Apple Silicon and Intel (.dmg and .zip, written to `source/dist-macos`):
+  `source/ChanSort.Avalonia/build-macos.sh [version]`
+
+The Mac app (`source/ChanSort.Avalonia`) uses [Avalonia UI](https://avaloniaui.net/) and the same file format
+modules (`source/ChanSort.Loader.*`) as the original ChanSort. See [build.md](source/build.md) for more details,
+e.g. how to run the unit tests on a Mac.
+
+Credits
+-------
+ChanSort for Mac is based on [ChanSort](https://github.com/PredatH0r/ChanSort) by Horst Beham (PredatH0r),
+which provides the support for all TV file formats. The original project's
+[documentation](https://github.com/PredatH0r/ChanSort/wiki) has more information about individual TV models
+and file formats.
 
 License (GPLv3)
 ---------------
 GNU General Public Licence, Version 3: http://www.gnu.org/licenses/gpl.html  
-Source code is available on https://github.com/PredatH0r/ChanSort
+Source code is available on https://github.com/alfonsocasadodiez/ChanSort-Mac
+(original project: https://github.com/PredatH0r/ChanSort)
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
