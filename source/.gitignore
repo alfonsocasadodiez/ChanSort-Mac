@@ -29,3 +29,6 @@ _ReSharper*/
 [Tt]est[Rr]esult*
 DLL/SQLite.Designer.dll
 DLL/SQLite.Designer.xml
+
+# macOS release packages (ChanSort.Avalonia/build-macos.sh)
+dist-macos/

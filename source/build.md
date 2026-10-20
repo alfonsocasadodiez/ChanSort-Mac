@@ -10,6 +10,22 @@ To change and compile the user interface, you need a DevExpress license. To add/
 The Visual Studio plug-in "ResX Manager" is used to export and import language specific strings to/from the translation.xls file,
 which can be edited by volunteers. Converting the .xls back to .resx and satellite assemblies requires recompilation of all projects.
 
+macOS (and Linux) version
+---
+The "ChanSort.Avalonia" project is a cross-platform user interface based on [Avalonia UI](https://avaloniaui.net/) (open source, no license needed).
+It targets .NET 10 and uses the same ChanSort.Api and ChanSort.Loader.\* projects as the Windows UI. These library projects are built
+for both net48 and net10.0 (net10.0 only when a .NET 10 SDK is installed, so building with older Visual Studio versions still works).
+
+Requirements: [.NET 10 SDK](https://dotnet.microsoft.com/download) (on macOS e.g. `brew install dotnet`)
+
+- run from source: `dotnet run --project source/ChanSort.Avalonia`
+- build the macOS app bundles (Apple Silicon + Intel, .zip and .dmg): `source/ChanSort.Avalonia/build-macos.sh [version]`  
+  The output goes to `source/dist-macos`. The app is self-contained (no .NET installation needed) and ad-hoc signed, but not notarized.
+- run the unit tests for net10.0 (e.g. on a Mac): the test projects need the "Microsoft.NET.Test.Sdk" package for `dotnet test`, which can be
+  injected without changing the projects, e.g. with a file `test-sdk.targets` containing
+  `<Project><ItemGroup Condition="$(MSBuildProjectName.StartsWith('Test.'))"><PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.11.0" /></ItemGroup><PropertyGroup><PostBuildEvent></PostBuildEvent></PropertyGroup></Project>`  
+  and `dotnet test source/Test.Loader.Samsung -f net10.0 -p:CustomBeforeMicrosoftCommonTargets=$PWD/test-sdk.targets`
+
 Build configurations 
 ---
 You can select any of these in the Visual Studio tool bar:

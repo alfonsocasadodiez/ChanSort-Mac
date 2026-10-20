@@ -4,7 +4,7 @@ Links
 [![DE](https://chansort.com/img/flag_de_24.png)](https://github.com/PredatH0r/ChanSort/blob/master/readme_de.md)
 [![PL](https://chansort.com/img/flag_pl_16.png)](https://github.com/PredatH0r/ChanSort/blob/master/readme_pl.md)
 [![TR](https://chansort.com/img/flag_tr_16.png)](https://github.com/PredatH0r/ChanSort/blob/master/readme_tr-TR.md) |
-[Download](https://github.com/PredatH0r/ChanSort/releases) | 
+[Download (Windows)](https://github.com/PredatH0r/ChanSort/releases) | [Download (macOS)](https://github.com/alfonsocasadodiez/ChanSort/releases/latest) | 
 [Dokumentation](https://github.com/PredatH0r/ChanSort/wiki/Home-(de)) |
 [Forum](https://github.com/PredatH0r/ChanSort/issues) | 
 [E-Mail](mailto:horst@beham.biz)
@@ -85,9 +85,18 @@ Zuletzt getestet mit Ubuntu 24.10, wine-9.0, winetricks 20240105
 
 Oder mit Docker: https://github.com/PredatH0r/ChanSort/issues/285
 
-**Mac**
-- macOS wird nicht direkt unterstützt, aber mit Parallels oder UTM kann eine VM mit Windows 10/11 am Mac genutzt werden
-- Anleitung für Macs mit m1/ARM CPU: https://history-computer.com/how-to-run-windows-on-m1-macs/
+**Mac** (native App):  
+- macOS 12 (Monterey) oder neuer, auf Macs mit Apple-Chip (M1/M2/M3/M4…) oder Intel-Prozessor. Eine .NET-Installation ist nicht nötig.
+- Download der passenden `.dmg`- (oder `.zip`-) Datei von der [macOS Release-Seite](https://github.com/alfonsocasadodiez/ChanSort/releases/latest):
+  `..._macOS_AppleSilicon.dmg` für Macs mit Apple-Chip, `..._macOS_Intel.dmg` für Intel-Macs
+- Die .dmg öffnen und ChanSort in den Ordner "Programme" ziehen.
+- Die App ist nicht von Apple notarisiert, daher blockiert Gatekeeper den ersten Start. Freigabe entweder
+  - nach dem ersten Startversuch unter Systemeinstellungen / Datenschutz & Sicherheit mit "Dennoch öffnen" (ab macOS 15), oder
+  - per Rechtsklick auf ChanSort / "Öffnen" (bis macOS 14), oder
+  - im Terminal: `xattr -dr com.apple.quarantine /Applications/ChanSort.app`
+- Die macOS-Version verwendet dieselben Dateiformat-Module wie die Windows-Version, hat aber eine vereinfachte, englischsprachige Oberfläche
+  (noch nicht verfügbar: Drag & Drop innerhalb der Listen, Drucken / Excel-Export, LG-TV-Einstellungen).
+- Alternativ kann die Windows-Version in einer Windows-VM (Parallels, UTM, VMware Fusion) verwendet werden.
 
 **Hardware**:  
 - USB Stick/SD-Karte zur Übertragung der Senderliste zwischen TV und PC (Ein Stick <= 32 GB mit FAT32-Formatierung

@@ -4,15 +4,16 @@ Links
 [![DE](https://chansort.com/img/flag_de_16.png)](https://github.com/PredatH0r/ChanSort/blob/master/readme_de.md)
 [![PL](https://chansort.com/img/flag_pl_16.png)](https://github.com/PredatH0r/ChanSort/blob/master/readme_pl.md)
 [![TR](https://chansort.com/img/flag_tr_16.png)](https://github.com/PredatH0r/ChanSort/blob/master/readme_tr-TR.md) |
-[Download](https://github.com/PredatH0r/ChanSort/releases) | 
+[Download (Windows)](https://github.com/PredatH0r/ChanSort/releases) | 
+[Download (macOS)](https://github.com/alfonsocasadodiez/ChanSort/releases/latest) | 
 [Documentation](https://github.com/PredatH0r/ChanSort/wiki) |
 [Forum](https://github.com/PredatH0r/ChanSort/issues) | 
 [E-Mail](mailto:horst@beham.biz)
 
 About ChanSort
 --------------
-ChanSort is a PC application that allows you to reorder your TV's channel list.  
-Most modern TVs can transfer channel lists via USB stick, which you can plug into your PC.  
+ChanSort is a Windows and macOS application that allows you to reorder your TV's channel list.  
+Most modern TVs can transfer channel lists via USB stick, which you can plug into your PC or Mac.  
 ChanSort supports [file formats from numerous brands](#supported-tv-models) and can copy program numbers and
 favorites from one file to another, even between different models and brands.
 
@@ -86,9 +87,27 @@ Last tested with Ubuntu 24.10, wine-9.0, winetricks 20240105
 
 Or using Docker: https://github.com/PredatH0r/ChanSort/issues/285
 
-**Mac**
-- macOS is not directly supported, but you can use Parallels or UTM to set up a VM with Windows 10/11 on the Mac
-- instructions for Macs with m1/ARM CPU: https://history-computer.com/how-to-run-windows-on-m1-macs/
+**Mac** (native app):  
+- macOS 12 (Monterey) or later, on Apple Silicon (M1/M2/M3/M4…) or Intel Macs. No .NET installation is needed.
+- Download the `.dmg` (or `.zip`) for your Mac from the [macOS releases page](https://github.com/alfonsocasadodiez/ChanSort/releases/latest):
+  - `ChanSort_<version>_macOS_AppleSilicon.dmg` for Macs with an Apple chip
+  - `ChanSort_<version>_macOS_Intel.dmg` for Intel Macs  
+  (Apple menu / About This Mac shows which chip your Mac has)
+- Open the .dmg and drag ChanSort into your Applications folder.
+- The app is not notarized by Apple, so the first launch is blocked by Gatekeeper. To allow it, either
+  - try to open it once, then go to System Settings / Privacy & Security and click "Open Anyway" (macOS 15 and later), or
+  - right-click ChanSort in Applications, choose "Open" and confirm (macOS 14 and earlier), or
+  - run `xattr -dr com.apple.quarantine /Applications/ChanSort.app` in Terminal.
+- Open your channel list with File / Open, or drag & drop the file onto the ChanSort window.
+
+The macOS version uses the same file format loaders as the Windows version, with a simplified user interface:
+- sorted list (left) and full channel list (right), with buttons/shortcuts to add, remove, move (⌘↑ / ⌘↓), renumber and sort channels
+- edit numbers and names directly in the grid, favorites, parental lock, skip and hide flags
+- apply reference lists (including the included sample lists), save reference lists, choose the character set
+- not available on macOS (yet): drag & drop inside the grids, printing / Excel export, the LG "TV settings" dialog,
+  user interface languages other than English, auto-update check
+
+Alternatively, you can run the Windows version in a Windows VM (Parallels, UTM, VMware Fusion).
 
 **Hardware**:
 - USB stick/SD-card to transfer the channel list between your TV and PC. A stick <= 32 GB with FAT32 file system 
@@ -96,7 +115,8 @@ is STRONGLY recommended. (Some TVs write garbage to NTFS and don't support exFAT
 
 Build from source
 -----------------
-See [build.md](source/build.md)
+See [build.md](source/build.md)  
+macOS: install the [.NET 10 SDK](https://dotnet.microsoft.com/download) and run `source/ChanSort.Avalonia/build-macos.sh`
 
 License (GPLv3)
 ---------------

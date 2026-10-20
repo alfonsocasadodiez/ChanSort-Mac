@@ -78,9 +78,15 @@ Sistem Gereksinimleri
 - ChanSort.exe'ye sağ tıklayın ve "open with", "all applications", "A wine application" sırasınca seçin  
 Son olarak Ubuntu 24.10, wine-9.0, winetricks 20240105 ile test edildi
 
-**Mac**
-- macOS doğrudan desteklenmez, ancak Mac'te Windows 10/11 ile bir VM kurmak için Parallels veya UTM kullanabilirsiniz
-- m1/ARM CPU'lu Mac'ler için talimatlar: https://history-computer.com/how-to-run-windows-on-m1-macs/
+**Mac** (yerel uygulama):  
+- macOS 12 (Monterey) veya üzeri, Apple çipli (M1/M2/M3/M4…) veya Intel Mac'ler. .NET kurulumu gerekmez.
+- [macOS sürüm sayfasından](https://github.com/alfonsocasadodiez/ChanSort/releases/latest) Mac'inize uygun `.dmg` (veya `.zip`) dosyasını indirin:
+  Apple çipli Mac'ler için `..._macOS_AppleSilicon.dmg`, Intel Mac'ler için `..._macOS_Intel.dmg`
+- .dmg dosyasını açın ve ChanSort'u Uygulamalar klasörüne sürükleyin.
+- Uygulama Apple tarafından onaylanmadığı (notarize edilmediği) için ilk açılışta Gatekeeper tarafından engellenir. İzin vermek için
+  Sistem Ayarları / Gizlilik ve Güvenlik bölümünde "Yine de Aç" seçeneğine tıklayın veya Terminal'de
+  `xattr -dr com.apple.quarantine /Applications/ChanSort.app` komutunu çalıştırın.
+- Alternatif olarak Windows sürümünü bir Windows sanal makinesinde (Parallels, UTM, VMware Fusion) kullanabilirsiniz.
 
 **Donanım**:
 - TV'niz ile PC'niz arasında kanal listesini aktarabilmek için USB bellek/SD-kart. En azından 32 GB bir bellek şiddetle tavsiye olunur. (Bazı TV'ler çöplerini NTFS dosya ssitemine yazar ve exFAT'ı desteklemezler bile.)

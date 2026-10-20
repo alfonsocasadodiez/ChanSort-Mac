@@ -1,6 +1,14 @@
 ﻿ChanSort Change Log 
 ===================
 
+2026-10-20 (macOS)
+- NEW: native macOS version (Apple Silicon and Intel), based on a new cross-platform Avalonia UI and .NET 10.
+  It uses the same file format loaders as the Windows version.
+- all loader libraries are now also built for .NET 10 (in addition to .NET Framework 4.8)
+- Toshiba chmgt.db, Samsung .zip (satellite data), Philips ChannelMap_xxx: fixed file paths that only worked on Windows
+- Samsung .zip, Philips, CMDB: channel lists are now loaded in a consistent order on all file systems
+- LG: when no character set is selected, the system's ANSI code page is used on all platforms
+
 2026-10-07
 - Sony Bravia 7/8 and Philips 120-125 lists: improved performance for loading and saving the list
 

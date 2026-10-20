@@ -1,0 +1,117 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="ChanSort.Avalonia.MainWindow"
+        Title="ChanSort"
+        Icon="avares://ChanSort/Assets/icon.png"
+        Width="1280" Height="800" MinWidth="800" MinHeight="480"
+        WindowStartupLocation="CenterScreen"
+        DragDrop.AllowDrop="True">
+  <Window.Styles>
+    <Style Selector="Button.tool">
+      <Setter Property="Padding" Value="8,3"/>
+      <Setter Property="FontSize" Value="12"/>
+    </Style>
+    <Style Selector="TextBlock.header">
+      <Setter Property="FontWeight" Value="SemiBold"/>
+      <Setter Property="FontSize" Value="13"/>
+      <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+  </Window.Styles>
+
+  <Panel>
+    <DockPanel>
+      <!-- shown inside the window on Linux/Windows; on macOS the menu lives in the global menu bar -->
+      <NativeMenuBar DockPanel.Dock="Top"/>
+
+      <!-- main tool bar -->
+      <Border DockPanel.Dock="Top" Padding="8,6" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
+        <DockPanel>
+          <StackPanel Orientation="Horizontal" Spacing="6" DockPanel.Dock="Left">
+            <Button Classes="tool" Name="btnOpen" Content="Open…" ToolTip.Tip="Open a TV channel list file"/>
+            <Button Classes="tool" Name="btnSave" Content="Save" ToolTip.Tip="Save the channel list (a .bak copy of the original is kept)"/>
+            <Button Classes="tool" Name="btnRefList" Content="Apply reference list…" ToolTip.Tip="Copy the channel order from another channel list or a ChanSort reference list"/>
+            <Button Classes="tool" Name="btnInfo" Content="File info" ToolTip.Tip="Show information about the loaded file"/>
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="6" DockPanel.Dock="Right" HorizontalAlignment="Right">
+            <TextBlock Name="lblSubList" Text="Sub list:" VerticalAlignment="Center" IsVisible="False"/>
+            <ComboBox Name="cbSubList" MinWidth="140" IsVisible="False"/>
+          </StackPanel>
+          <Panel/>
+        </DockPanel>
+      </Border>
+
+      <!-- channel list selector (TV / radio / sat / cable / ...) -->
+      <Border DockPanel.Dock="Top" Padding="8,4,8,0">
+        <TabStrip Name="tabLists"/>
+      </Border>
+
+      <!-- status bar -->
+      <Border DockPanel.Dock="Bottom" Padding="8,3" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
+        <DockPanel>
+          <TextBlock Name="lblStatusRight" DockPanel.Dock="Right" FontSize="11" Opacity="0.75"/>
+          <TextBlock Name="lblStatus" FontSize="11" Opacity="0.75" Text="Open a channel list file exported from your TV (File / Open or drag &amp; drop it here)."/>
+        </DockPanel>
+      </Border>
+
+      <Grid ColumnDefinitions="*,6,*" Margin="8,4,8,6">
+        <!-- left: sorted list -->
+        <DockPanel Grid.Column="0">
+          <DockPanel DockPanel.Dock="Top" Margin="0,0,0,4">
+            <TextBlock Classes="header" Name="lblLeft" Text="Sorted channels" DockPanel.Dock="Left" Margin="0,0,10,0"/>
+            <TextBox Name="txtFilterLeft" Watermark="Filter by name…" MinWidth="120"/>
+          </DockPanel>
+          <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,4">
+            <Button Classes="tool" Name="btnUp" Content="▲ Up" ToolTip.Tip="Move selected channels up (⌘↑)" Margin="0,0,4,2"/>
+            <Button Classes="tool" Name="btnDown" Content="▼ Down" ToolTip.Tip="Move selected channels down (⌘↓)" Margin="0,0,4,2"/>
+            <Button Classes="tool" Name="btnRemove" Content="✕ Remove" ToolTip.Tip="Remove selected channels from the sorted list (⌫)" Margin="0,0,4,2"/>
+            <Button Classes="tool" Name="btnSetNr" Content="# Set number…" ToolTip.Tip="Assign a new number to the selected channels" Margin="0,0,4,2"/>
+            <Button Classes="tool" Name="btnSortAz" Content="A→Z Sort" ToolTip.Tip="Sort the selected channels (or the whole list) alphabetically" Margin="0,0,4,2"/>
+            <Button Classes="tool" Name="btnRenum" Content="1,2,3 Renumber" ToolTip.Tip="Close numbering gaps in the selection (or the whole list)" Margin="0,0,4,2"/>
+          </WrapPanel>
+          <DataGrid Name="gridLeft"
+                    SelectionMode="Extended"
+                    CanUserSortColumns="False"
+                    CanUserReorderColumns="True"
+                    CanUserResizeColumns="True"
+                    GridLinesVisibility="Horizontal"
+                    HeadersVisibility="Column"
+                    IsReadOnly="False"/>
+        </DockPanel>
+
+        <GridSplitter Grid.Column="1" ResizeDirection="Columns" Background="Transparent"/>
+
+        <!-- right: all channels -->
+        <DockPanel Grid.Column="2">
+          <DockPanel DockPanel.Dock="Top" Margin="0,0,0,4">
+            <TextBlock Classes="header" Name="lblRight" Text="All channels" DockPanel.Dock="Left" Margin="0,0,10,0"/>
+            <CheckBox Name="cbOnlyUnsorted" Content="Only unsorted" DockPanel.Dock="Right" Margin="8,0,0,0"/>
+            <TextBox Name="txtFilterRight" Watermark="Filter by name…" MinWidth="120"/>
+          </DockPanel>
+          <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,4">
+            <Button Classes="tool" Name="btnAdd" Content="◀ Add to sorted list" ToolTip.Tip="Insert the selected channels after the selected channel in the sorted list, or append them (↵)" Margin="0,0,4,2"/>
+            <Button Classes="tool" Name="btnAddAll" Content="◀◀ Add all unsorted" ToolTip.Tip="Append all channels that are not in the sorted list yet" Margin="0,0,4,2"/>
+          </WrapPanel>
+          <DataGrid Name="gridRight"
+                    SelectionMode="Extended"
+                    CanUserSortColumns="True"
+                    CanUserReorderColumns="True"
+                    CanUserResizeColumns="True"
+                    GridLinesVisibility="Horizontal"
+                    HeadersVisibility="Column"
+                    IsReadOnly="False"/>
+        </DockPanel>
+      </Grid>
+    </DockPanel>
+
+    <!-- busy overlay -->
+    <Border Name="busyOverlay" IsVisible="False" Background="#60000000">
+      <Border HorizontalAlignment="Center" VerticalAlignment="Center" Padding="24,16" CornerRadius="8"
+              Background="{DynamicResource SystemControlBackgroundAltHighBrush}">
+        <StackPanel Spacing="10">
+          <TextBlock Name="lblBusy" Text="Working…" HorizontalAlignment="Center"/>
+          <ProgressBar IsIndeterminate="True" Width="220"/>
+        </StackPanel>
+      </Border>
+    </Border>
+  </Panel>
+</Window>
