@@ -16,7 +16,7 @@ namespace ChanSort.Loader.GlobalClone
     private readonly ChannelList satTvChannels = new ChannelList(SignalSource.DvbS | SignalSource.TvAndData, "Sat-TV");
     private readonly ChannelList satRadioChannels = new ChannelList(SignalSource.DvbS | SignalSource.Radio, "Sat-Radio");
     private XmlDocument doc;
-    private readonly DvbStringDecoder dvbStringDecoder = new DvbStringDecoder(Encoding.Default);
+    private readonly DvbStringDecoder dvbStringDecoder = new DvbStringDecoder(Tools.DefaultAnsiEncoding);
     private string modelName;
     private readonly Dictionary<int, string> satPositionByIndex = new Dictionary<int, string>();
     private bool usesBinaryDataInUtf8Envelope = false;

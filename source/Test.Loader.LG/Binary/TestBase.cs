@@ -136,20 +136,20 @@ namespace Test.Loader.LG.Binary
     protected void GenerateTestFiles(string modelAndBaseName, bool moveChannels = true)
     {
       TestUtils.DeploymentItem("ChanSort.Loader.LG\\ChanSort.Loader.LG.ini");
-      var testDataDir = TestUtils.GetSolutionBaseDir() + "\\Test.Loader.LG\\Binary\\" + Path.GetDirectoryName(modelAndBaseName);
+      var testDataDir = TestUtils.GetSolutionBaseDir() + "/Test.Loader.LG/Binary/" + Path.GetDirectoryName(modelAndBaseName);
       var basename = Path.GetFileNameWithoutExtension(modelAndBaseName);
 
       // copy .TLL.in
-      string destFileName = testDataDir + "\\" + basename + ".TLL.in";
-      if (!File.Exists(testDataDir + "\\" + basename + ".TLL.in"))
+      string destFileName = testDataDir + "/" + basename + ".TLL.in";
+      if (!File.Exists(testDataDir + "/" + basename + ".TLL.in"))
       {
-        if (File.Exists(testDataDir + "\\" + basename + ".TLL.bak"))
-          File.Move(testDataDir + "\\" + basename + ".TLL.bak", destFileName);
+        if (File.Exists(testDataDir + "/" + basename + ".TLL.bak"))
+          File.Move(testDataDir + "/" + basename + ".TLL.bak", destFileName);
         else
-          File.Move(testDataDir + "\\" + basename + ".TLL", destFileName);
+          File.Move(testDataDir + "/" + basename + ".TLL", destFileName);
       }
 
-      var outPath = testDataDir + "\\" + basename + ".TLL.out";
+      var outPath = testDataDir + "/" + basename + ".TLL.out";
       File.Copy(destFileName, outPath, true);
 
       TllFileSerializer tll = new TllFileSerializer(outPath);
@@ -162,7 +162,7 @@ namespace Test.Loader.LG.Binary
         using (var writer = new StringWriter())
         {
           CsvRefListSerializer.Save(writer, tll.DataRoot);
-          File.WriteAllText(testDataDir + "\\" + basename + ".csv.in", writer.ToString());
+          File.WriteAllText(testDataDir + "/" + basename + ".csv.in", writer.ToString());
         }
 
         // save modified list as .TLL.out

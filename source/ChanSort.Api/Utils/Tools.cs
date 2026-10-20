@@ -11,6 +11,31 @@ namespace ChanSort.Api
 {
   public static class Tools
   {
+    #region DefaultAnsiEncoding
+    /// <summary>
+    /// The system's ANSI code page, like Encoding.Default in .NET Framework.
+    /// In .NET (Core) Encoding.Default is always UTF-8, which would turn 8-bit characters in channel names into garbage.
+    /// </summary>
+    public static Encoding DefaultAnsiEncoding { get; } = GetDefaultAnsiEncoding();
+
+    private static Encoding GetDefaultAnsiEncoding()
+    {
+#if NETFRAMEWORK
+      return Encoding.Default;
+#else
+      try
+      {
+        var cp = System.Globalization.CultureInfo.CurrentCulture.TextInfo.ANSICodePage;
+        return Encoding.GetEncoding(cp > 0 && cp != 65001 ? cp : 1252);
+      }
+      catch
+      {
+        return Encoding.GetEncoding(1252);
+      }
+#endif
+    }
+    #endregion
+
     #region TryGet()
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static V TryGet<K, V>(this IDictionary<K, V> dict, K key, V defaultValue = default(V))

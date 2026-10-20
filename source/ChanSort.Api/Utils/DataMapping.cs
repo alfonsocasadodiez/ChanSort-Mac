@@ -14,7 +14,7 @@ namespace ChanSort.Api
     {
       this.settings = settings;
       this.Data = data;
-      this.DefaultEncoding = Encoding.Default;
+      this.DefaultEncoding = Tools.DefaultAnsiEncoding;
     }
     #endregion
 

@@ -9,7 +9,7 @@
     <ProjectReference Include="..\ChanSort.Api\ChanSort.Api.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
 

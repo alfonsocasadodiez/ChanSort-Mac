@@ -178,7 +178,7 @@ namespace ChanSort.Loader.Philips
       // ChannelMap_100/ChannelList/satInfo.bin
       // ChannelMap_120/ChannelList/MtkChannelList.xml
 
-      var dataFiles = new[] { @"channellib\DVBC.xml", @"channellib\DVBT.xml", @"s2channellib\DVBS.xml", @"s2channellib\DVBSall.xml", @"Favorite.xml" };
+      var dataFiles = new[] { "channellib/DVBC.xml", "channellib/DVBT.xml", "s2channellib/DVBS.xml", "s2channellib/DVBSall.xml", @"Favorite.xml" };
 
       // support for files in a ChannelMap_xxx directory structure
       bool isChannelMapFolderStructure = false;

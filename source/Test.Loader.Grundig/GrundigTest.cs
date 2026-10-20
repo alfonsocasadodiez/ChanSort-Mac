@@ -10,7 +10,7 @@ namespace Test.Loader.Grundig
     [TestMethod]
     public void TestChannelAndFavListEditing()
     {
-      var tempFile = TestUtils.DeploymentItem("Test.Loader.Grundig\\TestFiles") + "\\dvbs_config.xml";
+      var tempFile = TestUtils.DeploymentItem("Test.Loader.Grundig\\TestFiles") + "/dvbs_config.xml";
       RoundtripTest.TestChannelAndFavListEditing(tempFile, new GrundigPlugin());
     }
     #endregion

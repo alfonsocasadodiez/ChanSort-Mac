@@ -53,7 +53,7 @@ namespace Test.Loader.LG.Binary
       serializer.CleanUpChannelData();
       serializer.Save();
       if (generateReferenceFile)
-        File.Copy(serializer.FileName, TestUtils.GetSolutionBaseDir() + "\\Test.Loader.LG\\" + modelAndBaseName + ".TLL.out", true);
+        File.Copy(serializer.FileName, TestUtils.GetSolutionBaseDir() + "/Test.Loader.LG/" + modelAndBaseName + ".TLL.out", true);
       else
         AssertBinaryFileContent(serializer.FileName, baseName + ".TLL.out");      
     }

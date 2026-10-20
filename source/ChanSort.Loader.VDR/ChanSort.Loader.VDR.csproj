@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <Import Project="..\ChanSortProject.props" />
-  <PropertyGroup>
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net48'">
     <UseWindowsForms>true</UseWindowsForms>
     <ImportWindowsDesktopTargets>true</ImportWindowsDesktopTargets>
   </PropertyGroup>

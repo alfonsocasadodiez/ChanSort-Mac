@@ -64,7 +64,7 @@ namespace Test.Loader
             "\t" + (satChannelList != null && satChannelList.PresetProgramNrCount > 0) +
             "\t" + serializer.TvCountryCode;
 
-          string relPath = Path.GetFileName(Path.GetDirectoryName(file))+"\\"+fileName;          
+          string relPath = Path.GetFileName(Path.GetDirectoryName(file))+"/"+fileName;          
           models[key] = model + 
             "\t" + serializer.ACTChannelLength + 
             "\t" + serializer.SatChannelLength +
@@ -94,7 +94,7 @@ namespace Test.Loader
           Assert.IsFalse(serializer.DataRoot.IsEmpty, "No channels loaded from " + file);
 
           ExpectedData exp;
-          key = Path.GetFileName(Path.GetDirectoryName(file)) + "\\" + Path.GetFileName(file);
+          key = Path.GetFileName(Path.GetDirectoryName(file)) + "/" + Path.GetFileName(file);
           if (expectedData.TryGetValue(key, out exp))
           {
             var analogC = serializer.DataRoot.GetChannelList(ChanSort.Api.SignalSource.AnalogC|ChanSort.Api.SignalSource.Tv);

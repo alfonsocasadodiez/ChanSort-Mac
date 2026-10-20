@@ -15,7 +15,7 @@ namespace Test.Loader.Philips
     [TestMethod]
     public void TestChannelAndFavListEditing()
     {
-      var tempFile = TestUtils.DeploymentItem("Test.Loader.Philips\\TestFiles\\ChannelMap_30") + "\\ChannelList\\chanLst.bin";
+      var tempFile = TestUtils.DeploymentItem("Test.Loader.Philips\\TestFiles\\ChannelMap_30") + "/ChannelList/chanLst.bin";
       RoundtripTest.TestChannelAndFavListEditing(tempFile, new PhilipsPlugin());
     }
     #endregion
@@ -25,9 +25,9 @@ namespace Test.Loader.Philips
     public void TestSavingUpdatesCableChannelMapsDb()
     {
       // format 30 keeps the program numbers redundantly in CableDb.bin and in the AnalogTable/DigSrvTable of CableChannelMaps.db
-      var dir = TestUtils.DeploymentItem("Test.Loader.Philips\\TestFiles\\ChannelMap_30") + "\\ChannelList";
+      var dir = TestUtils.DeploymentItem("Test.Loader.Philips\\TestFiles\\ChannelMap_30") + "/ChannelList";
       var plugin = new PhilipsPlugin();
-      var ser = plugin.CreateSerializer(dir + "\\chanLst.bin");
+      var ser = plugin.CreateSerializer(dir + "/chanLst.bin");
       ser.Load();
       var data = ser.DataRoot;
       data.ValidateAfterLoad();
@@ -40,7 +40,7 @@ namespace Test.Loader.Philips
       ch2.NewProgramNr = 1;
       ser.Save();
 
-      using var conn = new SqliteConnection("Data Source=" + dir + "\\channellib\\CableChannelMaps.db;Pooling=False");
+      using var conn = new SqliteConnection("Data Source=" + dir + "/channellib/CableChannelMaps.db;Pooling=False");
       conn.Open();
       using var cmd = conn.CreateCommand();
       cmd.CommandText = "select PresetNumber from DigSrvTable where OriginalNetworkId=@onid and Tsid=@tsid and ServiceId=@sid";

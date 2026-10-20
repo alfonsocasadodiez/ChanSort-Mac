@@ -87,7 +87,7 @@ namespace Test.Loader.Samsung.Scm
             "\t" + (tivusatChannelList != null && tivusatChannelList.Count > 0) +
             "\t" + (iptvChannelList != null && iptvChannelList.Count > 0) +
             "\t" + serializer.SatDatabaseVersion;
-          string relPath = Path.GetFileName(Path.GetDirectoryName(file)) + "\\" + fileName;
+          string relPath = Path.GetFileName(Path.GetDirectoryName(file)) + "/" + fileName;
           models[key] = serializer.Series + 
             "\t" + model +
             "\t" + serializer.AnalogChannelLength +
@@ -110,7 +110,7 @@ namespace Test.Loader.Samsung.Scm
           Assert.IsFalse(serializer.DataRoot.IsEmpty, "No channels loaded from " + file);
 
           LoaderTestBase.ExpectedData exp;
-          key = Path.GetFileName(Path.GetDirectoryName(file)) + "\\" + Path.GetFileName(file);
+          key = Path.GetFileName(Path.GetDirectoryName(file)) + "/" + Path.GetFileName(file);
           if (expectedData.TryGetValue(key, out exp))
           {
             var analogTv = serializer.DataRoot.GetChannelList(ChanSort.Api.SignalSource.AnalogC);

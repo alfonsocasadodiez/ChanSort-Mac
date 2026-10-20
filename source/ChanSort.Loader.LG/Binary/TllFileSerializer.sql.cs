@@ -1,4 +1,5 @@
-﻿using System;
+﻿#if NETFRAMEWORK
+using System;
 using System.Data;
 using System.Data.Common;
 using System.Data.SqlClient;
@@ -215,3 +216,4 @@ from channel c inner join chanseq s on s.listid=c.listid and s.slot=c.slot
 
   }
 }
+#endif

@@ -58,7 +58,7 @@ namespace ChanSort.Loader.CmdbBin
     {
       this.dvbStringDecoder = new DvbStringDecoder(this.DefaultEncoding);
 
-      foreach (var file in Directory.GetFiles(Path.GetDirectoryName(this.FileName) ?? "."))
+      foreach (var file in Directory.GetFiles(Path.GetDirectoryName(this.FileName) ?? ".").OrderBy(f => f, StringComparer.OrdinalIgnoreCase)) // same order as NTFS on all file systems
       {
         var lower = Path.GetFileName(file).ToLowerInvariant();
         switch (lower)

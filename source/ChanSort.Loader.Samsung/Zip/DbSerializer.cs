@@ -73,11 +73,11 @@ namespace ChanSort.Loader.Samsung.Zip
     public override void Load()
     {
       this.UnzipFileToTempFolder();
-      if (File.Exists(this.TempPath + "\\sat"))
+      if (File.Exists(Path.Combine(this.TempPath, "sat")))
       {
         try
         {
-          using var conn = new SqliteConnection(Tools.SqlConnectionString(this.TempPath + "\\sat"));
+          using var conn = new SqliteConnection(Tools.SqlConnectionString(Path.Combine(this.TempPath, "sat")));
           conn.Open();
           this.ReadSatDatabase(conn);
         }
@@ -88,6 +88,7 @@ namespace ChanSort.Loader.Samsung.Zip
       }
 
       var files = Directory.GetFiles(this.TempPath, "*.");
+      Array.Sort(files, StringComparer.OrdinalIgnoreCase); // NTFS returns files in alphabetical order, other file systems don't
       if (files.Length == 0)
         throw LoaderException.TryNext("The Samsung .zip channel list archive does not contain any supported files.");
 

@@ -28,7 +28,7 @@ public class InitSqliteHelper
       {
         // copy runtimes folder with native binaries (couldn't find a clean way to determine the build output folder when running unit tests in parallel)
         var targetFramework = Environment.Version.Major == 4 ? "net48" : "net" + Environment.Version.Major;
-        var buildOutputRuntimesDir = TestUtils.GetSolutionBaseDir() + "\\Debug\\" + targetFramework + "\\runtimes";
+        var buildOutputRuntimesDir = Path.Combine(TestUtils.GetSolutionBaseDir(), "Debug", targetFramework, "runtimes");
         if (Directory.Exists(buildOutputRuntimesDir))
         {
           TestUtils.DeploymentItem(buildOutputRuntimesDir);

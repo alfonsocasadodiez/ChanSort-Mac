@@ -100,7 +100,7 @@ namespace ChanSort.Loader.Philips
 
       var dir = Path.GetDirectoryName(this.FileName) ?? ".";
       // must process *.db files first, then the FLASH_ files
-      var files = Directory.GetFiles(dir, "*.db").Union(Directory.GetFiles(dir, "FLASH_*"));
+      var files = Directory.GetFiles(dir, "*.db").OrderBy(f => f, StringComparer.OrdinalIgnoreCase).Union(Directory.GetFiles(dir, "FLASH_*").OrderBy(f => f, StringComparer.OrdinalIgnoreCase));
       foreach (var file in files)
       {
         var lowercaseFileName = Path.GetFileName(file).ToLowerInvariant();

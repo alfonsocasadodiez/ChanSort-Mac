@@ -20,6 +20,7 @@ namespace Test.Loader
       GetExecutableDir();
 
 
+      file = file.Replace('\\', Path.DirectorySeparatorChar); // test code uses Windows path separators
       var src = Path.Combine(solutionDir, file);
       var dest = Path.Combine(executableDir, Path.GetFileName(file));
       if (Directory.Exists(src))
@@ -49,7 +50,7 @@ namespace Test.Loader
       var dir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
       do
       {
-        if (File.Exists(dir + "\\ChanSort.sln"))
+        if (File.Exists(Path.Combine(dir, "ChanSort.sln")))
           return solutionDir = dir;
         dir = Path.GetDirectoryName(dir);
       } while (!string.IsNullOrEmpty(dir));
@@ -57,7 +58,7 @@ namespace Test.Loader
       dir = Environment.CurrentDirectory;
       do
       {
-        if (File.Exists(dir + "\\ChanSort.sln"))
+        if (File.Exists(Path.Combine(dir, "ChanSort.sln")))
           return solutionDir = dir;
         dir = Path.GetDirectoryName(dir);
       } while (!string.IsNullOrEmpty(dir));

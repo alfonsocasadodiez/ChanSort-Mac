@@ -17,7 +17,7 @@ namespace Test.Loader.Philips
     public void TestRepairFormatCableChannelsAddedToCorrectLists()
     {
       // this file format doesn't provide any information whether a channel is TV/radio/data or analog/digital. It only contains the "medium" for antenna/cable/sat
-      var file = TestUtils.DeploymentItem("Test.Loader.Philips\\TestFiles") + "\\Repair\\CM_TPM1013E_LA_CK.xml";
+      var file = TestUtils.DeploymentItem("Test.Loader.Philips\\TestFiles") + "/Repair/CM_TPM1013E_LA_CK.xml";
       this.TestChannelsAddedToCorrectLists(file, SignalSource.DvbC, 483, 0, 0);
     }
     #endregion
@@ -26,7 +26,7 @@ namespace Test.Loader.Philips
     [TestMethod]
     public void TestChannelMapFormatSatChannelsAddedToCorrectLists()
     {
-      var file = TestUtils.DeploymentItem("Test.Loader.Philips\\TestFiles") + "\\ChannelMap_100\\ChannelList\\chanLst.bin";
+      var file = TestUtils.DeploymentItem("Test.Loader.Philips\\TestFiles") + "/ChannelMap_100/ChannelList/chanLst.bin";
       this.TestChannelsAddedToCorrectLists(file, SignalSource.DvbS, 502, 350, 152);
     }
     #endregion
@@ -35,7 +35,7 @@ namespace Test.Loader.Philips
     [TestMethod]
     public void TestChannelMapFormatCableChannelsAddedToCorrectLists()
     {
-      var file = TestUtils.DeploymentItem("Test.Loader.Philips\\TestFiles") + "\\ChannelMap_100\\ChannelList\\chanLst.bin";
+      var file = TestUtils.DeploymentItem("Test.Loader.Philips\\TestFiles") + "/ChannelMap_100/ChannelList/chanLst.bin";
       this.TestChannelsAddedToCorrectLists(file, SignalSource.DvbC, 459, 358, 101);
     }
     #endregion
@@ -45,7 +45,7 @@ namespace Test.Loader.Philips
     public void TestChannelMap125FormatCableChannelsAddedToCorrectLists()
     {
       // format 125 also contains a MtkChannelList.xml with MultiBank=COMMON, which must be loaded as one list per source
-      var file = TestUtils.DeploymentItem("Test.Loader.Philips\\TestFiles\\ChannelMap_125") + "\\ChannelList\\chanLst.bin";
+      var file = TestUtils.DeploymentItem("Test.Loader.Philips\\TestFiles\\ChannelMap_125") + "/ChannelList/chanLst.bin";
       this.TestChannelsAddedToCorrectLists(file, SignalSource.DvbC, 382, 236, 143);
     }
     #endregion
@@ -59,7 +59,7 @@ namespace Test.Loader.Philips
       // MtkChannelList.xml as well has not been tested on a Philips TV and is therefore limited to developer mode.
       foreach (var developerMode in new[] { false, true })
       {
-        var file = TestUtils.DeploymentItem("Test.Loader.Philips\\TestFiles\\ChannelMap_125") + "\\ChannelList\\chanLst.bin";
+        var file = TestUtils.DeploymentItem("Test.Loader.Philips\\TestFiles\\ChannelMap_125") + "/ChannelList/chanLst.bin";
         var mtkFile = Path.Combine(Path.GetDirectoryName(file), "MtkChannelList.xml");
         var hiddenBefore = CountHiddenSvlRecords(mtkFile);
         Assert.AreEqual(7, hiddenBefore);
@@ -118,7 +118,7 @@ namespace Test.Loader.Philips
     [TestMethod]
     public void TestDeletingChannel()
     {
-      var tempFile = TestUtils.DeploymentItem("Test.Loader.Philips\\TestFiles") + "\\ChannelMap_100\\ChannelList\\chanLst.bin";
+      var tempFile = TestUtils.DeploymentItem("Test.Loader.Philips\\TestFiles") + "/ChannelMap_100/ChannelList/chanLst.bin";
       var plugin = new PhilipsPlugin();
       var ser = plugin.CreateSerializer(tempFile);
       ser.Load();
@@ -163,7 +163,7 @@ namespace Test.Loader.Philips
     [TestMethod]
     public void TestChannelAndFavListEditing_100()
     {
-      var tempFile = TestUtils.DeploymentItem("Test.Loader.Philips\\TestFiles\\ChannelMap_100\\ChannelList") + "\\chanLst.bin";
+      var tempFile = TestUtils.DeploymentItem("Test.Loader.Philips\\TestFiles\\ChannelMap_100\\ChannelList") + "/chanLst.bin";
       RoundtripTest.TestChannelAndFavListEditing(tempFile, new PhilipsPlugin());
     }
     #endregion
@@ -172,7 +172,7 @@ namespace Test.Loader.Philips
     [TestMethod]
     public void TestChannelAndFavListEditing_125()
     {
-      var tempFile = TestUtils.DeploymentItem("Test.Loader.Philips\\TestFiles\\ChannelMap_125") + "\\ChannelList\\chanLst.bin";
+      var tempFile = TestUtils.DeploymentItem("Test.Loader.Philips\\TestFiles\\ChannelMap_125") + "/ChannelList/chanLst.bin";
       RoundtripTest.TestChannelAndFavListEditing(tempFile, new PhilipsPlugin());
     }
     #endregion
@@ -181,7 +181,7 @@ namespace Test.Loader.Philips
     [TestMethod]
     public void TestChannelAndFavListEditing_Legacy()
     {
-      var tempFile = TestUtils.DeploymentItem("Test.Loader.Philips\\TestFiles\\Repair") + "\\CM_TPM1013E_LA_CK.xml";
+      var tempFile = TestUtils.DeploymentItem("Test.Loader.Philips\\TestFiles\\Repair") + "/CM_TPM1013E_LA_CK.xml";
       RoundtripTest.TestChannelAndFavListEditing(tempFile, new PhilipsPlugin());
     }
     #endregion

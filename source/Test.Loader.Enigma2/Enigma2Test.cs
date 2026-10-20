@@ -10,7 +10,7 @@ namespace Test.Loader.Enigma2
     [TestMethod]
     public void TestChannelAndFavListEditing()
     {
-      var tempFile = TestUtils.DeploymentItem("Test.Loader.Enigma2\\TestFiles") + "\\bouquets.tv";
+      var tempFile = TestUtils.DeploymentItem("Test.Loader.Enigma2\\TestFiles") + "/bouquets.tv";
       RoundtripTest.TestChannelAndFavListEditing(tempFile, new Enigma2Plugin(), false);
     }
     #endregion

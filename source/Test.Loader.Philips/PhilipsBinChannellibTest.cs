@@ -13,7 +13,7 @@ namespace Test.Loader.Philips
     [TestMethod]
     public void TestFiles1()
     {
-      var baseFile = TestUtils.DeploymentItem("Test.Loader.Philips\\TestFiles1\\Repair\\ChannelList") + "\\chanLst.bin";
+      var baseFile = TestUtils.DeploymentItem("Test.Loader.Philips\\TestFiles1\\Repair\\ChannelList") + "/chanLst.bin";
       var plugin = new ChanSort.Loader.Philips.PhilipsPlugin();
       var loader = plugin.CreateSerializer(baseFile);
       loader.Load();
@@ -38,7 +38,7 @@ namespace Test.Loader.Philips
     [TestMethod]
     public void TestChannelAndFavListEditing()
     {
-      var tempFile = TestUtils.DeploymentItem("Test.Loader.Philips\\TestFiles1\\Repair\\ChannelList") + "\\chanLst.bin";
+      var tempFile = TestUtils.DeploymentItem("Test.Loader.Philips\\TestFiles1\\Repair\\ChannelList") + "/chanLst.bin";
       RoundtripTest.TestChannelAndFavListEditing(tempFile, new PhilipsPlugin(), true, 3);
     }
     #endregion

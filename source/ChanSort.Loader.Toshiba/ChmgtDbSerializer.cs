@@ -7,9 +7,9 @@ namespace ChanSort.Loader.Toshiba
 {
   internal class ChmgtDbSerializer : SerializerBase
   {
-    private const string FILE_chmgt_db = "\\chmgt_type001\\chmgt.db";
-    private const string FILE_dvbSysData_db = "\\dvb_type001\\dvbSysData.db";
-    private const string FILE_dvbMainData_db = "\\dvb_type001\\dvbMainData.db";
+    private static readonly string FILE_chmgt_db = Path.Combine("chmgt_type001", "chmgt.db");
+    private static readonly string FILE_dvbSysData_db = Path.Combine("dvb_type001", "dvbSysData.db");
+    private static readonly string FILE_dvbMainData_db = Path.Combine("dvb_type001", "dvbMainData.db");
 
     private readonly ChannelList atvChannels = new(SignalSource.AnalogCT, "Analog");
     private readonly Dictionary<string, bool> channelInfoByUid = new();
@@ -53,7 +53,7 @@ namespace ChanSort.Loader.Toshiba
       else
         workingDir = Path.GetDirectoryName(this.FileName);
 
-      using (var conn = new SqliteConnection(Tools.SqlConnectionString(this.workingDir + FILE_dvbSysData_db)))
+      using (var conn = new SqliteConnection(Tools.SqlConnectionString(Path.Combine(this.workingDir, FILE_dvbSysData_db))))
       {
         conn.Open();
         using var cmd = conn.CreateCommand();
@@ -62,14 +62,14 @@ namespace ChanSort.Loader.Toshiba
         ReadTransponders(cmd);
       }
 
-      using (var conn = new SqliteConnection(Tools.SqlConnectionString(this.workingDir + FILE_dvbMainData_db)))
+      using (var conn = new SqliteConnection(Tools.SqlConnectionString(Path.Combine(this.workingDir, FILE_dvbMainData_db))))
       {
         conn.Open();
         using var cmd = conn.CreateCommand();
         ReadCryptInfo(cmd);
       }
 
-      using (var conn = new SqliteConnection(Tools.SqlConnectionString(this.workingDir + FILE_chmgt_db)))
+      using (var conn = new SqliteConnection(Tools.SqlConnectionString(Path.Combine(this.workingDir, FILE_chmgt_db))))
       {
         conn.Open();
         using var cmd = conn.CreateCommand();
@@ -257,7 +257,7 @@ namespace ChanSort.Loader.Toshiba
 
     public override void Save()
     {
-      using (var conn = new SqliteConnection(Tools.SqlConnectionString(this.workingDir + FILE_chmgt_db)))
+      using (var conn = new SqliteConnection(Tools.SqlConnectionString(Path.Combine(this.workingDir, FILE_chmgt_db))))
       {
         conn.Open();
         using var trans = conn.BeginTransaction();
