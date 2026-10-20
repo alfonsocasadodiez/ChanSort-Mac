@@ -1,0 +1,168 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="ChanSort.Avalonia.MainWindow"
+        Title="ChanSort"
+        Icon="avares://ChanSort/Assets/icon.png"
+        Width="1280" Height="800" MinWidth="900" MinHeight="500"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource CsWindowBackground}"
+        DragDrop.AllowDrop="True">
+
+  <Panel>
+    <Grid ColumnDefinitions="220,*">
+
+      <!-- sidebar (source list), extends below the window's traffic light buttons on macOS -->
+      <Border Grid.Column="0" Name="sidebar" Background="{DynamicResource CsSidebarBackground}"
+              BorderBrush="{DynamicResource CsSeparator}" BorderThickness="0,0,1,0">
+        <DockPanel>
+          <Border DockPanel.Dock="Top" Name="sidebarTitleArea" Height="52" Background="Transparent"/>
+          <StackPanel DockPanel.Dock="Bottom" Margin="20,8,14,12" Spacing="2">
+            <TextBlock Name="lblStatusRight" FontSize="11" Classes="secondary" TextWrapping="Wrap"/>
+            <TextBlock Name="lblStatus" FontSize="11" Classes="secondary" TextWrapping="Wrap"
+                       Text="Open the channel list file exported by your TV, or drop it onto this window."/>
+          </StackPanel>
+          <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+            <StackPanel>
+              <TextBlock Classes="sectionHeader" Name="hdrLists" Text="Channel Lists" Margin="20,4,10,4"/>
+              <ListBox Classes="sidebar" Name="lstLists">
+                <ListBox.ItemTemplate>
+                  <DataTemplate>
+                    <DockPanel>
+                      <TextBlock DockPanel.Dock="Right" Text="{Binding Count}" FontSize="11" Classes="secondary" VerticalAlignment="Center" Margin="6,0,0,0"/>
+                      <PathIcon DockPanel.Dock="Left" Data="{Binding Icon}" Width="15" Height="15" Margin="0,0,9,0" Foreground="{DynamicResource CsSecondaryText}"/>
+                      <TextBlock Text="{Binding Caption}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                    </DockPanel>
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
+              <TextBlock Classes="sectionHeader" Name="lblSubList" Text="Numbering" IsVisible="False"/>
+              <ListBox Classes="sidebar" Name="lstSubLists" IsVisible="False">
+                <ListBox.ItemTemplate>
+                  <DataTemplate>
+                    <DockPanel>
+                      <PathIcon DockPanel.Dock="Left" Data="{Binding Icon}" Width="15" Height="15" Margin="0,0,9,0" Foreground="{DynamicResource CsSecondaryText}"/>
+                      <TextBlock Text="{Binding Caption}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                    </DockPanel>
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
+            </StackPanel>
+          </ScrollViewer>
+        </DockPanel>
+      </Border>
+
+      <!-- content -->
+      <DockPanel Grid.Column="1" Background="{DynamicResource CsContentBackground}">
+        <!-- shown inside the window on Linux/Windows; on macOS the menu lives in the global menu bar -->
+        <NativeMenuBar DockPanel.Dock="Top"/>
+
+        <!-- unified window toolbar -->
+        <Border DockPanel.Dock="Top" Name="toolbar" Height="52" Padding="18,0,12,0" Background="Transparent"
+                BorderBrush="{DynamicResource CsSeparator}" BorderThickness="0,0,0,1">
+          <DockPanel>
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+              <Button Classes="toolbar" Name="btnOpen" ToolTip.Tip="Open a channel list (⌘O)">
+                <PathIcon Data="{StaticResource IconOpen}"/>
+              </Button>
+              <Button Classes="toolbar" Name="btnSave" ToolTip.Tip="Save (⌘S) – a .bak copy of the original file is kept">
+                <PathIcon Data="{StaticResource IconSave}"/>
+              </Button>
+              <Button Classes="toolbar" Name="btnRefList" ToolTip.Tip="Apply the order of a reference list or another channel list (⌘R)">
+                <PathIcon Data="{StaticResource IconRefList}"/>
+              </Button>
+              <Button Classes="toolbar" Name="btnInfo" ToolTip.Tip="File information (⌘I)">
+                <PathIcon Data="{StaticResource IconInfo}"/>
+              </Button>
+            </StackPanel>
+            <StackPanel VerticalAlignment="Center" IsHitTestVisible="False">
+              <TextBlock Name="lblTitle" Text="ChanSort" FontWeight="Bold" FontSize="15"/>
+              <TextBlock Name="lblSubtitle" Text="No channel list opened" FontSize="11" Classes="secondary" TextTrimming="CharacterEllipsis"/>
+            </StackPanel>
+          </DockPanel>
+        </Border>
+
+        <Grid ColumnDefinitions="*,1,*">
+          <!-- left: sorted list -->
+          <DockPanel Grid.Column="0">
+            <DockPanel DockPanel.Dock="Top" Margin="14,10,12,8">
+              <TextBox Classes="search" Name="txtFilterLeft" DockPanel.Dock="Right" Width="190" Watermark="Search">
+                <TextBox.InnerLeftContent>
+                  <PathIcon Data="{StaticResource IconSearch}" Width="13" Height="13" Margin="6,0,2,0" Foreground="{DynamicResource CsSecondaryText}"/>
+                </TextBox.InnerLeftContent>
+              </TextBox>
+              <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                <TextBlock Name="lblLeft" Text="Sorted Channels" FontWeight="SemiBold"/>
+                <TextBlock Name="lblLeftCount" Classes="secondary"/>
+              </StackPanel>
+            </DockPanel>
+            <Border DockPanel.Dock="Bottom" BorderBrush="{DynamicResource CsSeparator}" BorderThickness="0,1,0,0" Padding="6,3">
+              <StackPanel Orientation="Horizontal" Spacing="1">
+                <Button Classes="toolbar" Name="btnUp" ToolTip.Tip="Move up (⌘↑)"><PathIcon Data="{StaticResource IconUp}"/></Button>
+                <Button Classes="toolbar" Name="btnDown" ToolTip.Tip="Move down (⌘↓)"><PathIcon Data="{StaticResource IconDown}"/></Button>
+                <Button Classes="toolbar" Name="btnRemove" ToolTip.Tip="Remove from the sorted list (⌫)"><PathIcon Data="{StaticResource IconMinus}"/></Button>
+                <Border Width="1" Margin="6,5" Background="{DynamicResource CsSeparator}"/>
+                <Button Classes="toolbar" Name="btnSetNr" ToolTip.Tip="Set number… (⇧⌘N)"><PathIcon Data="{StaticResource IconHash}"/></Button>
+                <Button Classes="toolbar" Name="btnSortAz" ToolTip.Tip="Sort the selection (or the whole list) by name"><PathIcon Data="{StaticResource IconSort}"/></Button>
+                <Button Classes="toolbar" Name="btnRenum" ToolTip.Tip="Renumber the selection (or the whole list) without gaps"><PathIcon Data="{StaticResource IconNumbered}"/></Button>
+              </StackPanel>
+            </Border>
+            <DataGrid Name="gridLeft"
+                      SelectionMode="Extended"
+                      CanUserSortColumns="False"
+                      CanUserReorderColumns="True"
+                      CanUserResizeColumns="True"
+                      HeadersVisibility="Column"
+                      IsReadOnly="False"/>
+          </DockPanel>
+
+          <Border Grid.Column="1" Background="{DynamicResource CsSeparator}"/>
+          <GridSplitter Grid.Column="1" ResizeDirection="Columns" Background="Transparent" Width="7" Margin="-3,0" ZIndex="1"/>
+
+          <!-- right: all channels -->
+          <DockPanel Grid.Column="2">
+            <DockPanel DockPanel.Dock="Top" Margin="14,10,12,8">
+              <TextBox Classes="search" Name="txtFilterRight" DockPanel.Dock="Right" Width="190" Watermark="Search">
+                <TextBox.InnerLeftContent>
+                  <PathIcon Data="{StaticResource IconSearch}" Width="13" Height="13" Margin="6,0,2,0" Foreground="{DynamicResource CsSecondaryText}"/>
+                </TextBox.InnerLeftContent>
+              </TextBox>
+              <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                <TextBlock Name="lblRight" Text="All Channels" FontWeight="SemiBold"/>
+                <TextBlock Name="lblRightCount" Classes="secondary"/>
+              </StackPanel>
+            </DockPanel>
+            <Border DockPanel.Dock="Bottom" BorderBrush="{DynamicResource CsSeparator}" BorderThickness="0,1,0,0" Padding="6,3">
+              <DockPanel>
+                <CheckBox Name="cbOnlyUnsorted" Content="Unsorted only" DockPanel.Dock="Right" FontSize="12" Margin="0,0,6,0"/>
+                <StackPanel Orientation="Horizontal" Spacing="1">
+                  <Button Classes="toolbar" Name="btnAdd" ToolTip.Tip="Add to the sorted list, after the channel selected there (↵ or double-click)"><PathIcon Data="{StaticResource IconPlus}"/></Button>
+                  <Button Classes="toolbar" Name="btnAddAll" ToolTip.Tip="Append all channels that are not in the sorted list yet"><PathIcon Data="{StaticResource IconAddToList}"/></Button>
+                </StackPanel>
+              </DockPanel>
+            </Border>
+            <DataGrid Name="gridRight"
+                      SelectionMode="Extended"
+                      CanUserSortColumns="True"
+                      CanUserReorderColumns="True"
+                      CanUserResizeColumns="True"
+                      HeadersVisibility="Column"
+                      IsReadOnly="True"/>
+          </DockPanel>
+        </Grid>
+      </DockPanel>
+    </Grid>
+
+    <!-- busy indicator -->
+    <Border Name="busyOverlay" IsVisible="False" Background="{DynamicResource CsDim}">
+      <Border Classes="sheet" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="28,20">
+        <StackPanel Spacing="12">
+          <TextBlock Name="lblBusy" Text="Working…" HorizontalAlignment="Center"/>
+          <ProgressBar Name="busyProgress" IsIndeterminate="False" Width="240" MinHeight="4"/>
+        </StackPanel>
+      </Border>
+    </Border>
+
+    <!-- dialogs are shown as macOS style sheets in this panel -->
+    <Panel Name="sheetHost" IsVisible="False"/>
+  </Panel>
+</Window>

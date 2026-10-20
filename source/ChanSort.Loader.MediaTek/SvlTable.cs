@@ -1,0 +1,489 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.IO.Compression;
+using System.Linq;
+using System.Text;
+using ChanSort.Api;
+
+namespace ChanSort.Loader.MediaTek;
+
+/// <summary>
+/// Native MediaTek service list ("gfs_Svl_102" on BRAVIA 8 II, "ffs_Svl_101" in older Sony exports) inside the Java serialized &lt;internal&gt;&lt;service_database&gt;.
+/// Sony BRAVIA 8 II ignores &lt;major_channel_number&gt; and only uses this binary table.
+/// This class only modifies an existing TV export (renumber + re-sort), it cannot create records.
+/// </summary>
+public class SvlTable
+{
+  /*
+   * Layout (all values big endian):
+   *
+   * Java TC_ARRAY length (u32)
+   * container: "ZI\x04\x32" u32 totalLen ... [+0x17] u24 (totalLen - 0x400) ... (0x400 bytes)
+   *
+   * outer object:     0D B0 AB CD  21  00 27                         ┐
+   * outer meta:       00 "gfs_Svl_102" 00...  u32 cdbBlockLen        ┘ CRC Y
+   * cdb block:        0C DB 0C DB  07  LL LL                         ┐
+   * cdb meta:         LLLL bytes, last u32 = dataSectionLen          │ CRC X, continued over
+   * data section:     "cl_Zip" + 10x00                               │ the deflate payloads only
+   *                   n x [flag(1) compLen(4) rawLen(4) payload]     ┘ (not over "cl_Zip" and chunk headers)
+   *                   X (u32)  F3 24 F3 24
+   *                   Y (u32)  F2 4F 54 32
+   *
+   * CRC for X and Y: Crc32.Normal (MSB first, poly 04C11DB7, init FFFFFFFF, no final XOR) = CRC-32/MPEG-2
+   *
+   * chunks: raw deflate, flag 0x81 = records (65 x 504 bytes per chunk), flag 0x82 = name pool (single chunk)
+   *
+   * record (504 bytes):
+   * +4  u16 record_id (same as in the XML record_id)
+   * +6  u16 program number << 2 (lower 2 bits must be kept)
+   * +9  u8  group: 0x81 = TV, 0x82 = radio, 0x83 = data
+   * +13 u8  visibility: 0x0F = visible, 0x09 = hidden (the XML visible_service 3 / 1 mirrors it)
+   * +22 u32 record hashcode (x31 hash over name, +6..+9, type, +30..+31, service id; see CalcHashcode)
+   * +26 u16 service id
+   * +42 u16 1-based index into the name pool (0 = no name)
+   *
+   * name pool: u32 4*count, u32 stringsLen, u32 offset[count], strings (u16 len + bytes), in record order
+   */
+
+  public const int RecordSize = 504;
+  private const int ChunkSize = 32768 / RecordSize * RecordSize;
+  private const byte VisibleFlag = 0x0F;
+  private const byte HiddenFlag = 0x09;
+
+  private static readonly byte[] SvlTableName = Encoding.ASCII.GetBytes("fs_Svl_10"); // gfs_Svl_102, ffs_Svl_101
+  private static readonly byte[] CdbMagic = [0x0C, 0xDB, 0x0C, 0xDB];
+  private static readonly byte[] ZipMagic = Encoding.ASCII.GetBytes("cl_Zip");
+  private static readonly byte[] ContainerMagic = [0x5A, 0x49, 0x04, 0x32];
+  private static readonly byte[] ServiceListIdPrefix = Encoding.ASCII.GetBytes("SERVICE_LIST_");
+
+  private byte[] data;
+  private int namePos;     // "gfs_Svl_102" / "ffs_Svl_101"
+  private int cdbPos;      // 0C DB 0C DB
+  private int zipPos;      // "cl_Zip"
+  private int chainStart;  // first chunk header
+  private int chainEnd;    // X
+  private int containerPos;
+
+  /// <summary>e.g. "SERVICE_LIST_GENERAL_SATELLITE/20", the prefix of the XML &lt;record_id&gt; values of this table</summary>
+  public string ServiceListId { get; private set; }
+
+  public readonly List<byte[]> Records = new();
+  public readonly List<byte[]> Names = new(); // raw name pool entry per record, null = no name
+  // Whether the stored hashcode of each record follows CalcHashcode(). Only those are updated on save;
+  // see CalcHashcode() for why some records cannot be recomputed.
+  private readonly List<bool> hashcodeKnown = new();
+
+  #region TryLoad(), LoadAll()
+  /// <summary>
+  /// Loads the first Svl table. Files with more than one service list (e.g. satellite + terrestrial) contain one
+  /// Svl table per list, use LoadAll() for those.
+  /// </summary>
+  public static SvlTable TryLoad(byte[] serviceDatabase)
+  {
+    var svl = new SvlTable();
+    return svl.Load(serviceDatabase, 0) ? svl : null;
+  }
+
+  /// <summary>
+  /// Loads all Svl tables, one per &lt;service_list_info&gt;. Tables can be empty (e.g. a satellite list without
+  /// channels next to a cable list). Match them to the XML by ServiceListId, not by position.
+  /// </summary>
+  public static List<SvlTable> LoadAll(byte[] serviceDatabase)
+  {
+    var list = new List<SvlTable>();
+    for (int pos = 0; ;)
+    {
+      var svl = new SvlTable();
+      if (!svl.Load(serviceDatabase, pos))
+        return list;
+      list.Add(svl);
+      pos = svl.chainEnd;
+    }
+  }
+  #endregion
+
+  #region Load()
+  private bool Load(byte[] serviceDatabase, int searchFrom)
+  {
+    this.data = serviceDatabase;
+    var nameIdx0 = IndexOf(data, SvlTableName, searchFrom);
+    if (nameIdx0 < 9)
+      return false;
+    this.namePos = nameIdx0 - 1;
+    this.ServiceListId = GetServiceListId(namePos);
+    this.cdbPos = IndexOf(data, CdbMagic, namePos);
+    this.zipPos = IndexOf(data, ZipMagic, cdbPos);
+    this.containerPos = LastIndexOf(data, ContainerMagic, namePos - 16, searchFrom); // missing for empty tables
+    if (cdbPos < 0 || zipPos < 0)
+      return false;
+
+    // inflate all chunks; the data section starting at "cl_Zip" ends at X
+    var raw = new MemoryStream();
+    int poolStart = -1;
+    int off = zipPos + 16;
+    this.chainStart = off;
+    this.chainEnd = zipPos + data.GetInt32(zipPos - 4, false);
+    while (off < chainEnd)
+    {
+      var flag = data[off];
+      var compLen = data.GetInt32(off + 1, false);
+      var rawLen = data.GetInt32(off + 5, false);
+      if (flag == 0x82)
+        poolStart = (int)raw.Length;
+      var chunk = Inflate(data, off + 9, compLen);
+      if (chunk.Length != rawLen)
+        throw LoaderException.Fail("Svl: invalid chunk length");
+      raw.Write(chunk, 0, chunk.Length);
+      off += 9 + compLen;
+    }
+    if (off != chainEnd)
+      throw LoaderException.Fail("Svl: invalid data section length");
+
+    if (!VerifyChecksums())
+      throw LoaderException.Fail("Svl: invalid checksum");
+
+    var svl = raw.ToArray();
+    if (svl.Length == 0)
+      return true; // empty list
+    if (poolStart < 0 || poolStart % RecordSize != 0)
+      throw LoaderException.Fail("Svl: missing name pool");
+    var pool = ParsePool(svl, poolStart);
+    for (int i = 0; i < poolStart / RecordSize; i++)
+    {
+      var rec = new byte[RecordSize];
+      Array.Copy(svl, i * RecordSize, rec, 0, RecordSize);
+      this.Records.Add(rec);
+      var nameIdx = rec.GetInt16(42, false);
+      var name = nameIdx == 0 ? null : pool[nameIdx - 1];
+      this.Names.Add(name);
+      this.hashcodeKnown.Add(CalcHashcode(rec, name) == (uint)rec.GetInt32(22, false));
+    }
+    return true;
+  }
+  #endregion
+
+  #region GetServiceListId()
+  private string GetServiceListId(int before)
+  {
+    // Java modified UTF-8 string (u16 length + chars) like "SERVICE_LIST_CABLE/12", written by TransferListData before
+    // the tables of each list. Other strings starting with SERVICE_LIST_ (list type, prefix) have no "/<number>".
+    for (var pos = LastIndexOf(data, ServiceListIdPrefix, before, 2); pos >= 2; pos = LastIndexOf(data, ServiceListIdPrefix, pos - 1, 2))
+    {
+      var len = data.GetInt16(pos - 2, false) & 0xFFFF;
+      if (len > 64 || pos + len > data.Length)
+        continue; // e.g. "KEY_SVL_SERVICE_LIST_PREFIX": the bytes before "SERVICE_LIST_" are not a length
+      var id = Encoding.ASCII.GetString(data, pos, len);
+      var slash = id.IndexOf('/');
+      if (slash > 0 && slash < id.Length - 1 && id.Substring(slash + 1).All(char.IsDigit) && id.Substring(0, slash).All(c => c == '_' || c >= 'A' && c <= 'Z'))
+        return id;
+    }
+    return null;
+  }
+  #endregion
+
+  #region ParsePool()
+  private static List<byte[]> ParsePool(byte[] svl, int start)
+  {
+    var count = svl.GetInt32(start, false) / 4;
+    var stringsStart = start + 8 + count * 4;
+    var list = new List<byte[]>(count);
+    for (int i = 0; i < count; i++)
+    {
+      var from = stringsStart + svl.GetInt32(start + 8 + i * 4, false);
+      var to = i + 1 < count ? stringsStart + svl.GetInt32(start + 12 + i * 4, false) : svl.Length;
+      var name = new byte[to - from];
+      Tools.MemCopy(svl, from, name, 0, name.Length);
+      list.Add(name);
+    }
+    return list;
+  }
+  #endregion
+
+  #region record accessors
+  // All accessors read big endian explicitly (Tools.GetInt16/32 with littleEndian=false), so the result does not
+  // depend on the platform (.NET Framework / .NET, Windows / macOS, x86 / ARM).
+
+  /// <summary>record_id at +4, same value as the last segment of the XML &lt;record_id&gt;</summary>
+  public static int GetRecordId(byte[] rec) => rec.GetInt16(4, false) & 0xFFFF;
+
+  /// <summary>
+  /// Program number as shown on the TV (= XML &lt;major_channel_number&gt;): u16 at +6, shifted right by 2.
+  /// Example: 00 7c -> 124 -> 31, 00 80 -> 128 -> 32. Range 0..16383 (14 bits); the lower 2 bits were 0 in all observed records.
+  /// Numbers are unique per group (+9), not over the whole table: the BRAVIA 8 II DVB-S export uses separate ranges
+  /// (TV from 1, radio from 7201, data from 7587), ChanSort's DVB-C test file numbers each group from 1.
+  /// Records are stored sorted by (number, group).
+  /// </summary>
+  public static int GetProgramNr(byte[] rec) => (rec.GetInt16(6, false) & 0xFFFF) >> 2;
+
+  /// <summary>group at +9: 0x81 = TV, 0x82 = radio, 0x83 = data (decides the list, not sdt_service_type)</summary>
+  public static int GetGroup(byte[] rec) => rec[9];
+
+  /// <summary>DVB service ID at +26 (not contained in the Sony XML)</summary>
+  public static int GetServiceId(byte[] rec) => rec.GetInt16(26, false) & 0xFFFF;
+
+  /// <summary>
+  /// Visibility flag at +13: 0x0F = visible, 0x09 = hidden. The TV mirrors it into the XML as
+  /// &lt;visible_service&gt; 3 / 1 when it exports, but on import it only uses the binary value.
+  /// A hidden channel keeps its program number. The flag is not an input of the hashcode at +22.
+  /// </summary>
+  public static bool GetHidden(byte[] rec) => rec[13] == HiddenFlag;
+
+  /// <summary>
+  /// Sets or clears the hidden flag at +13. Only the two values found in TV exports are changed; a record with
+  /// any other value is left alone and false is returned.
+  /// </summary>
+  public static bool SetHidden(byte[] rec, bool hidden)
+  {
+    if (rec[13] != VisibleFlag && rec[13] != HiddenFlag)
+      return false;
+    rec[13] = hidden ? HiddenFlag : VisibleFlag;
+    return true;
+  }
+
+  /// <summary>
+  /// The hashcode stored at +22: a Java-style 31-hash over the service name, the u32 at +6 (number and group),
+  /// the broadcast type, the u16 at +30 and the service id, with every multi-byte value in little endian.
+  /// It reproduces the stored value for 15821 of the 16986 records of 18 Sony and Philips exports, and for all
+  /// records of five of those files. The rest are pay-TV services whose hash covers a second, short name that
+  /// the export does not contain, so for those the value cannot be recomputed from the file.
+  /// </summary>
+  /// <param name="namePoolEntry">raw name pool entry (u16 length + bytes) of the record, null = no name</param>
+  public static uint CalcHashcode(byte[] rec, byte[] namePoolEntry)
+  {
+    uint h = 0;
+    if (namePoolEntry != null)
+    {
+      var len = Math.Min(namePoolEntry.Length - 2, 65);
+      for (int i = 0; i < len; i++)
+        h = unchecked(h * 31 + namePoolEntry[2 + i]);
+    }
+    for (int i = 9; i >= 6; i--)                    // u32 at +6, little endian
+      h = unchecked(h * 31 + rec[i]);
+    h = unchecked(h * 31 + 2);                      // broadcast type: DVB
+    h = unchecked(h * 31 + rec[31]);                // u16 at +30, little endian
+    h = unchecked(h * 31 + rec[30]);
+    h = unchecked(h * 31 + rec[27]);                // service id at +26, little endian
+    h = unchecked(h * 31 + rec[26]);
+    return h;
+  }
+
+  /// <summary>
+  /// Sets the program number, keeping the lower 2 bits. The hashcode at +22 is not touched here; Save() updates
+  /// it for every record whose stored value follows CalcHashcode().
+  /// Only valid numbers 1..16383 are accepted; ChanSort's -1 for "no new number" must be resolved by the caller.
+  /// </summary>
+  public static void SetProgramNr(byte[] rec, int nr)
+  {
+    if (nr < 1 || nr > 0x3FFF)
+      throw LoaderException.Fail($"Svl: invalid program number {nr} for record_id {GetRecordId(rec)}");
+    var oldRaw = rec.GetInt16(6, false) & 0xFFFF;
+    rec.SetInt16(6, (nr << 2) | (oldRaw & 3), false);
+  }
+  #endregion
+
+  #region Save()
+  /// <summary>
+  /// Sorts the records by (program number, group) like the TV does, rebuilds the name pool, recompresses the table,
+  /// updates all length fields and checksums. Returns the record_ids in their new order so that the caller can
+  /// reorder the XML &lt;service_info&gt; elements accordingly (they must match 1:1).
+  /// Only for files with a single Svl table; use SaveAll() for the result of LoadAll().
+  /// </summary>
+  public List<int> Save(out byte[] serviceDatabase)
+  {
+    return this.SaveInto(this.data, out serviceDatabase);
+  }
+
+  /// <summary>
+  /// Saves all tables returned by LoadAll() into one &lt;service_database&gt;. Returns the new record_id order per table.
+  /// The tables are processed from the end of the buffer to the start, so the offsets of the tables before remain valid.
+  /// Load the result again before saving another time.
+  /// </summary>
+  public static Dictionary<SvlTable, List<int>> SaveAll(byte[] serviceDatabase, IEnumerable<SvlTable> tables, out byte[] result)
+  {
+    var orders = new Dictionary<SvlTable, List<int>>();
+    result = serviceDatabase;
+    foreach (var svl in tables.OrderByDescending(t => t.namePos))
+      orders[svl] = svl.Records.Count == 0 ? new List<int>() : svl.SaveInto(result, out result);
+    return orders;
+  }
+
+  private List<int> SaveInto(byte[] data, out byte[] serviceDatabase)
+  {
+    if (this.Records.Count == 0)
+    {
+      serviceDatabase = data;
+      return new List<int>();
+    }
+    if (this.containerPos < 4)
+      throw LoaderException.Fail("Svl: container header not found");
+
+    // OrderBy is a stable sort: records with the same (number, group) keep their order.
+    // The TV itself exports such duplicates (e.g. two radio services with the same number), so they are not an error.
+    var order = Enumerable.Range(0, Records.Count).OrderBy(i => GetProgramNr(Records[i])).ThenBy(i => GetGroup(Records[i])).ToList();
+
+    // records and name pool in new order
+    var recData = new MemoryStream();
+    var poolEntries = new List<byte[]>();
+    foreach (var i in order)
+    {
+      var rec = Records[i];
+      if (Names[i] == null)
+        rec.SetInt16(42, 0, false);
+      else
+      {
+        poolEntries.Add(Names[i]);
+        rec.SetInt16(42, poolEntries.Count, false);
+      }
+      // The hashcode covers the number, so it has to follow any renumbering. The name pool index does not
+      // enter it, which is why re-sorting alone leaves it unchanged.
+      if (this.hashcodeKnown[i])
+        rec.SetInt32(22, (int)CalcHashcode(rec, Names[i]), false);
+      recData.Write(rec, 0, RecordSize);
+    }
+
+    // compressed chunk chain
+    var chain = new MemoryStream();
+    var recBytes = recData.ToArray();
+    for (int off = 0; off < recBytes.Length; off += ChunkSize)
+      WriteChunk(chain, 0x81, recBytes, off, Math.Min(ChunkSize, recBytes.Length - off));
+    var pool = BuildPool(poolEntries);
+    WriteChunk(chain, 0x82, pool, 0, pool.Length);
+
+    // splice the new chain into the blob
+    var newChain = chain.ToArray();
+    var delta = newChain.Length - (chainEnd - chainStart);
+    var buf = new byte[data.Length + delta];
+    Array.Copy(data, 0, buf, 0, chainStart);
+    Array.Copy(newChain, 0, buf, chainStart, newChain.Length);
+    Array.Copy(data, chainEnd, buf, chainStart + newChain.Length, data.Length - chainEnd);
+
+    // length fields outside of the chain
+    AddInt32(buf, containerPos - 4, delta);         // Java TC_ARRAY length
+    AddInt32(buf, containerPos + 4, delta);         // container total length
+    AddInt24(buf, containerPos + 0x17, delta);      // container total length - 0x400
+    AddInt32(buf, namePos + 0x22, delta);           // outer meta: cdb block length (in Y)
+    AddInt32(buf, zipPos - 4, delta);               // cdb meta: data section length (in X)
+
+    // positions of this table stay valid in buf (only bytes behind the chain moved)
+    this.data = buf;
+    this.chainEnd = chainStart + newChain.Length;
+    buf.SetInt32(chainEnd, (int)CalcX(), false);
+    buf.SetInt32(chainEnd + 8, (int)CalcY(), false);
+
+    serviceDatabase = buf;
+    return order.Select(i => GetRecordId(Records[i])).ToList();
+  }
+  #endregion
+
+  #region checksums
+  private uint CalcX()
+  {
+    // cdb header + cdb meta, followed by the deflate payloads of all chunks (without chunk headers)
+    var metaLen = data.GetInt16(cdbPos + 5, false);
+    var ms = new MemoryStream();
+    ms.Write(data, cdbPos, 7 + metaLen);
+    for (int off = chainStart; off < chainEnd;)
+    {
+      var compLen = data.GetInt32(off + 1, false);
+      ms.Write(data, off + 9, compLen);
+      off += 9 + compLen;
+    }
+    var bytes = ms.ToArray();
+    return Crc32.Normal.CalcCrc32(bytes, 0, bytes.Length);
+  }
+
+  private uint CalcY()
+  {
+    var start = namePos - 8;
+    var metaLen = data.GetInt16(start + 5, false);
+    return Crc32.Normal.CalcCrc32(data, start, 7 + metaLen);
+  }
+
+  public bool VerifyChecksums()
+  {
+    return (uint)data.GetInt32(chainEnd, false) == CalcX() && (uint)data.GetInt32(chainEnd + 8, false) == CalcY();
+  }
+  #endregion
+
+  #region helpers
+  private static byte[] Inflate(byte[] buf, int off, int len)
+  {
+    using var input = new MemoryStream(buf, off, len);
+    using var deflate = new DeflateStream(input, CompressionMode.Decompress);
+    var output = new MemoryStream();
+    deflate.CopyTo(output);
+    return output.ToArray();
+  }
+
+  private static void WriteChunk(Stream chain, byte flag, byte[] raw, int off, int len)
+  {
+    var comp = new MemoryStream();
+    // Any valid raw deflate stream works, because X is computed over the bytes actually written.
+    // Do not expect the TV's own bytes: rebuilding an unmodified export is byte-identical on some
+    // platforms and not on others (macOS .NET 10 yes, Windows ARM64 .NET 10.0.401 no), and zlib at
+    // level 9 reproduces only part of the chunks as well. Compare decompressed data, not files.
+#if NETFRAMEWORK
+    using (var deflate = new DeflateStream(comp, CompressionLevel.Optimal, true))
+#else
+    using (var deflate = new DeflateStream(comp, CompressionLevel.SmallestSize, true))
+#endif
+      deflate.Write(raw, off, len);
+    var header = new byte[9];
+    header[0] = flag;
+    header.SetInt32(1, (int)comp.Length, false);
+    header.SetInt32(5, len, false);
+    chain.Write(header, 0, header.Length);
+    comp.Position = 0;
+    comp.CopyTo(chain);
+  }
+
+  private static byte[] BuildPool(List<byte[]> entries)
+  {
+    var ms = new MemoryStream();
+    var head = new byte[8 + 4 * entries.Count];
+    head.SetInt32(0, 4 * entries.Count, false);
+    head.SetInt32(4, entries.Sum(e => e.Length), false);
+    int strOff = 0;
+    for (int i = 0; i < entries.Count; i++)
+    {
+      head.SetInt32(8 + 4 * i, strOff, false);
+      strOff += entries[i].Length;
+    }
+    ms.Write(head, 0, head.Length);
+    foreach (var e in entries)
+      ms.Write(e, 0, e.Length);
+    return ms.ToArray();
+  }
+
+  private static void AddInt32(byte[] buf, int off, int delta) => buf.SetInt32(off, buf.GetInt32(off, false) + delta, false);
+
+  private static void AddInt24(byte[] buf, int off, int delta)
+  {
+    var v = (buf[off] << 16) + (buf[off + 1] << 8) + buf[off + 2] + delta;
+    buf[off] = (byte)(v >> 16);
+    buf[off + 1] = (byte)(v >> 8);
+    buf[off + 2] = (byte)v;
+  }
+
+  private static int IndexOf(byte[] buf, byte[] pattern, int start)
+  {
+    for (int i = Math.Max(0, start); i <= buf.Length - pattern.Length; i++)
+    {
+      if (Tools.MemComp(buf, i, pattern) == 0)
+        return i;
+    }
+    return -1;
+  }
+
+  private static int LastIndexOf(byte[] buf, byte[] pattern, int before, int notBefore = 0)
+  {
+    for (int i = Math.Min(before, buf.Length - pattern.Length); i >= notBefore; i--)
+    {
+      if (Tools.MemComp(buf, i, pattern) == 0)
+        return i;
+    }
+    return -1;
+  }
+  #endregion
+}

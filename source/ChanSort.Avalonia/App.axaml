@@ -1,0 +1,240 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="ChanSort.Avalonia.App"
+             Name="ChanSort"
+             RequestedThemeVariant="Default">
+
+  <!-- colors modeled after the macOS system colors (light / dark appearance) -->
+  <Application.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.MergedDictionaries>
+        <ResourceInclude Source="avares://ChanSort/Icons.axaml"/>
+      </ResourceDictionary.MergedDictionaries>
+      <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Light">
+          <SolidColorBrush x:Key="CsWindowBackground" Color="#E9E8EA"/>
+          <SolidColorBrush x:Key="CsSidebarBackground" Color="#B8E9E8EA"/>
+          <SolidColorBrush x:Key="CsContentBackground" Color="#FFFFFF"/>
+          <SolidColorBrush x:Key="CsSeparator" Color="#1C000000"/>
+          <SolidColorBrush x:Key="CsSecondaryText" Color="#85000000"/>
+          <SolidColorBrush x:Key="CsTertiaryText" Color="#4D000000"/>
+          <SolidColorBrush x:Key="CsAltRow" Color="#F4F5F5"/>
+          <SolidColorBrush x:Key="CsHover" Color="#0D000000"/>
+          <SolidColorBrush x:Key="CsSidebarSelection" Color="#1A000000"/>
+          <SolidColorBrush x:Key="CsSheetBackground" Color="#F2F2F2"/>
+          <SolidColorBrush x:Key="CsDim" Color="#1A000000"/>
+          <SolidColorBrush x:Key="CsFieldBackground" Color="#FFFFFF"/>
+          <SolidColorBrush x:Key="CsFieldBorder" Color="#24000000"/>
+
+          <SolidColorBrush x:Key="ButtonBackground" Color="#FFFFFF"/>
+          <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#FAFAFA"/>
+          <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#E4E4E4"/>
+          <SolidColorBrush x:Key="ButtonBackgroundDisabled" Color="#F6F6F6"/>
+          <SolidColorBrush x:Key="ButtonBorderBrush" Color="#24000000"/>
+          <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="#30000000"/>
+          <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="#30000000"/>
+          <SolidColorBrush x:Key="ButtonBorderBrushDisabled" Color="#14000000"/>
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="Dark">
+          <SolidColorBrush x:Key="CsWindowBackground" Color="#2A2A2C"/>
+          <SolidColorBrush x:Key="CsSidebarBackground" Color="#B82A2A2C"/>
+          <SolidColorBrush x:Key="CsContentBackground" Color="#1E1E1E"/>
+          <SolidColorBrush x:Key="CsSeparator" Color="#24FFFFFF"/>
+          <SolidColorBrush x:Key="CsSecondaryText" Color="#8CFFFFFF"/>
+          <SolidColorBrush x:Key="CsTertiaryText" Color="#4DFFFFFF"/>
+          <SolidColorBrush x:Key="CsAltRow" Color="#0AFFFFFF"/>
+          <SolidColorBrush x:Key="CsHover" Color="#12FFFFFF"/>
+          <SolidColorBrush x:Key="CsSidebarSelection" Color="#24FFFFFF"/>
+          <SolidColorBrush x:Key="CsSheetBackground" Color="#2C2C2E"/>
+          <SolidColorBrush x:Key="CsDim" Color="#40000000"/>
+          <SolidColorBrush x:Key="CsFieldBackground" Color="#14FFFFFF"/>
+          <SolidColorBrush x:Key="CsFieldBorder" Color="#1FFFFFFF"/>
+
+          <SolidColorBrush x:Key="ButtonBackground" Color="#5A5A5C"/>
+          <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#656567"/>
+          <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#78787A"/>
+          <SolidColorBrush x:Key="ButtonBackgroundDisabled" Color="#3A3A3C"/>
+          <SolidColorBrush x:Key="ButtonBorderBrush" Color="#14FFFFFF"/>
+          <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="#1FFFFFFF"/>
+          <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="#1FFFFFFF"/>
+          <SolidColorBrush x:Key="ButtonBorderBrushDisabled" Color="#0AFFFFFF"/>
+        </ResourceDictionary>
+      </ResourceDictionary.ThemeDictionaries>
+
+      <!-- macOS style table selection: solid accent color (opacity is lowered when the table doesn't have the focus) -->
+      <x:Double x:Key="DataGridRowSelectedBackgroundOpacity">1</x:Double>
+      <x:Double x:Key="DataGridRowSelectedHoveredBackgroundOpacity">1</x:Double>
+      <x:Double x:Key="DataGridRowSelectedUnfocusedBackgroundOpacity">0.35</x:Double>
+      <x:Double x:Key="DataGridRowSelectedHoveredUnfocusedBackgroundOpacity">0.35</x:Double>
+      <x:Double x:Key="DataGridSortIconMinWidth">14</x:Double>
+      <SolidColorBrush x:Key="DataGridGridLinesBrush" Color="Transparent"/>
+      <SolidColorBrush x:Key="DataGridCellFocusVisualPrimaryBrush" Color="Transparent"/>
+      <SolidColorBrush x:Key="DataGridCellFocusVisualSecondaryBrush" Color="Transparent"/>
+    </ResourceDictionary>
+  </Application.Resources>
+
+  <Application.Styles>
+    <FluentTheme DensityStyle="Compact" />
+    <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml"/>
+
+    <Style Selector="Window">
+      <Setter Property="FontSize" Value="13"/>
+    </Style>
+
+    <!-- push buttons -->
+    <Style Selector="Button">
+      <Setter Property="CornerRadius" Value="6"/>
+      <Setter Property="Padding" Value="10,3"/>
+      <Setter Property="MinHeight" Value="24"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="FontSize" Value="13"/>
+    </Style>
+
+    <!-- borderless toolbar buttons (window toolbar and table bottom bars) -->
+    <Style Selector="Button.toolbar">
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="Padding" Value="7,4"/>
+      <Setter Property="MinHeight" Value="26"/>
+      <Setter Property="Foreground" Value="{DynamicResource CsSecondaryText}"/>
+    </Style>
+    <Style Selector="Button.toolbar /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="Transparent"/>
+    </Style>
+    <Style Selector="Button.toolbar:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource CsHover}"/>
+    </Style>
+    <Style Selector="Button.toolbar:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource CsSidebarSelection}"/>
+    </Style>
+    <Style Selector="Button.toolbar:disabled /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="Transparent"/>
+    </Style>
+    <Style Selector="Button.toolbar:disabled">
+      <Setter Property="Opacity" Value="0.4"/>
+    </Style>
+    <Style Selector="Button.toolbar PathIcon">
+      <Setter Property="Width" Value="16"/>
+      <Setter Property="Height" Value="16"/>
+    </Style>
+    <Style Selector="Button.small">
+      <Setter Property="FontSize" Value="12"/>
+      <Setter Property="Padding" Value="6,2"/>
+      <Setter Property="MinHeight" Value="22"/>
+    </Style>
+    <Style Selector="Button.small PathIcon">
+      <Setter Property="Width" Value="13"/>
+      <Setter Property="Height" Value="13"/>
+    </Style>
+
+    <!-- text fields / search fields -->
+    <Style Selector="TextBox">
+      <Setter Property="CornerRadius" Value="6"/>
+      <Setter Property="MinHeight" Value="24"/>
+      <Setter Property="FontSize" Value="13"/>
+    </Style>
+    <Style Selector="TextBox.search">
+      <Setter Property="Background" Value="{DynamicResource CsFieldBackground}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource CsFieldBorder}"/>
+      <Setter Property="Padding" Value="4,3,6,3"/>
+      <Setter Property="MinHeight" Value="26"/>
+    </Style>
+    <Style Selector="TextBox.search:focus /template/ Border#PART_BorderElement">
+      <Setter Property="BorderBrush" Value="{DynamicResource SystemAccentColor}"/>
+      <Setter Property="BorderThickness" Value="2"/>
+    </Style>
+
+    <!-- sidebar (source list) -->
+    <Style Selector="ListBox.sidebar">
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="Padding" Value="0"/>
+    </Style>
+    <Style Selector="ListBox.sidebar ListBoxItem">
+      <Setter Property="Padding" Value="8,4"/>
+      <Setter Property="Margin" Value="10,1"/>
+      <Setter Property="MinHeight" Value="28"/>
+      <Setter Property="CornerRadius" Value="6"/>
+    </Style>
+    <Style Selector="ListBox.sidebar ListBoxItem /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="CornerRadius" Value="6"/>
+    </Style>
+    <Style Selector="ListBox.sidebar ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource CsHover}"/>
+    </Style>
+    <Style Selector="ListBox.sidebar ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource CsSidebarSelection}"/>
+      <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
+    </Style>
+    <Style Selector="ListBox.sidebar ListBoxItem:selected:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource CsSidebarSelection}"/>
+    </Style>
+    <Style Selector="ListBox.sidebar ListBoxItem:selected PathIcon">
+      <Setter Property="Foreground" Value="{DynamicResource SystemAccentColor}"/>
+    </Style>
+    <Style Selector="TextBlock.sectionHeader">
+      <Setter Property="FontSize" Value="11"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+      <Setter Property="Foreground" Value="{DynamicResource CsTertiaryText}"/>
+      <Setter Property="Margin" Value="20,14,10,4"/>
+    </Style>
+    <Style Selector="TextBlock.secondary">
+      <Setter Property="Foreground" Value="{DynamicResource CsSecondaryText}"/>
+    </Style>
+
+    <!-- tables -->
+    <Style Selector="DataGrid">
+      <Setter Property="FontSize" Value="13"/>
+      <Setter Property="RowHeight" Value="24"/>
+      <Setter Property="Background" Value="{DynamicResource CsContentBackground}"/>
+      <Setter Property="GridLinesVisibility" Value="None"/>
+      <Setter Property="BorderThickness" Value="0"/>
+    </Style>
+    <Style Selector="DataGridColumnHeader">
+      <Setter Property="Padding" Value="8,0,0,0"/>
+      <Setter Property="FontSize" Value="12"/>
+      <Setter Property="MinHeight" Value="26"/>
+      <Setter Property="Foreground" Value="{DynamicResource CsSecondaryText}"/>
+      <Setter Property="Background" Value="{DynamicResource CsContentBackground}"/>
+      <Setter Property="SeparatorBrush" Value="{DynamicResource CsSeparator}"/>
+    </Style>
+    <Style Selector="DataGridRow:nth-child(2n)">
+      <Setter Property="Background" Value="{DynamicResource CsAltRow}"/>
+    </Style>
+    <!-- selected rows: light accent tint in an inactive table, solid accent with white text in the focused table (like macOS) -->
+    <Style Selector="DataGridRow:selected /template/ Rectangle#BackgroundRectangle">
+      <Setter Property="Fill" Value="{DynamicResource SystemAccentColor}"/>
+      <Setter Property="Opacity" Value="0.28"/>
+    </Style>
+    <Style Selector="DataGrid:focus-within DataGridRow:selected /template/ Rectangle#BackgroundRectangle">
+      <Setter Property="Opacity" Value="1"/>
+    </Style>
+    <Style Selector="DataGrid:focus-within DataGridRow:selected">
+      <Setter Property="Foreground" Value="White"/>
+    </Style>
+    <Style Selector="DataGridCell">
+      <Setter Property="MinHeight" Value="22"/>
+      <Setter Property="Padding" Value="2,0"/>
+    </Style>
+
+    <!-- macOS style sheet (dialogs slide out of the toolbar) -->
+    <Style Selector="Border.sheet">
+      <Setter Property="Background" Value="{DynamicResource CsSheetBackground}"/>
+      <Setter Property="CornerRadius" Value="12"/>
+      <Setter Property="BoxShadow" Value="0 12 40 0 #59000000"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource CsSeparator}"/>
+      <Setter Property="BorderThickness" Value="0.5"/>
+      <Setter Property="Padding" Value="20"/>
+    </Style>
+    <Style Selector=":is(TextBlock).alertTitle">
+      <Setter Property="FontSize" Value="13"/>
+      <Setter Property="FontWeight" Value="Bold"/>
+      <Setter Property="TextWrapping" Value="Wrap"/>
+    </Style>
+  </Application.Styles>
+
+  <NativeMenu.Menu>
+    <NativeMenu>
+      <NativeMenuItem Header="About ChanSort" Click="About_Click"/>
+    </NativeMenu>
+  </NativeMenu.Menu>
+</Application>

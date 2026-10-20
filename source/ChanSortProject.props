@@ -1,0 +1,21 @@
+<Project>
+  <Import Project="Solution.props" />
+  <PropertyGroup>
+    <!-- libraries are built for the Windows UI (net48) and, when a .NET 10 SDK is available, for the cross-platform macOS UI (net10.0) -->
+    <TargetFramework></TargetFramework>
+    <TargetFrameworks>net48</TargetFrameworks>
+    <TargetFrameworks Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(NETCoreSdkVersion)', '10.0'))">net48;net10.0</TargetFrameworks>
+    <OutputType>Library</OutputType>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <OutputPath>..\Debug\</OutputPath>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'NoDevExpress_Debug|AnyCPU' ">
+    <OutputPath>..\Debug\</OutputPath>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <OutputPath>..\Release\</OutputPath>
+  </PropertyGroup>
+</Project>
