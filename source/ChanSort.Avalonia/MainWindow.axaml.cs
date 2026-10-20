@@ -12,7 +12,10 @@ using Avalonia.Collections;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Data;
+using Avalonia.Animation;
 using Avalonia.Input;
+using Avalonia.Media;
+using Avalonia.Media.Transformation;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
@@ -24,7 +27,7 @@ namespace ChanSort.Avalonia
   public partial class MainWindow : Window
   {
     private const string WikiUrl = "https://github.com/PredatH0r/ChanSort/wiki";
-    private const string GithubUrl = "https://github.com/alfonsocasadodiez/ChanSort";
+    private const string GithubUrl = "https://github.com/alfonsocasadodiez/ChanSort-Mac";
 
     private readonly Settings settings = Settings.Load();
     private readonly IList<ISerializerPlugin> plugins;
@@ -87,6 +90,18 @@ namespace ChanSort.Avalonia
       };
 
       this.plugins = LoadSerializerPlugins();
+
+      if (OperatingSystem.IsMacOS())
+      {
+        // unified title bar: the sidebar extends below the traffic lights and the toolbar shares the title bar
+        this.ExtendClientAreaToDecorationsHint = true;
+        this.ExtendClientAreaChromeHints = global::Avalonia.Platform.ExtendClientAreaChromeHints.PreferSystemChrome;
+        this.ExtendClientAreaTitleBarHeightHint = 52;
+        this.TransparencyLevelHint = new[] { WindowTransparencyLevel.AcrylicBlur, WindowTransparencyLevel.None };
+        this.Background = Brushes.Transparent;
+      }
+      else
+        this.sidebarTitleArea.Height = 6;
 
       this.BuildMenu();
       this.WireEvents();
@@ -293,22 +308,22 @@ namespace ChanSort.Avalonia
       this.btnAdd.Click += async (_, _) => await this.Run(this.AddChannels);
       this.btnAddAll.Click += async (_, _) => await this.Run(this.AddAllUnsorted);
 
-      this.tabLists.SelectionChanged += (_, _) =>
+      this.lstLists.SelectionChanged += (_, _) =>
       {
         if (this.suppressEvents > 0) return;
-        if (this.tabLists.SelectedItem is TabStripItem { Tag: ChannelList list })
+        if (this.lstLists.SelectedItem is SidebarItem { Tag: ChannelList list })
           this.ShowChannelList(list);
       };
-      this.cbSubList.SelectionChanged += (_, _) =>
+      this.lstSubLists.SelectionChanged += (_, _) =>
       {
         if (this.suppressEvents > 0) return;
-        var idx = this.cbSubList.SelectedIndex;
+        var idx = this.lstSubLists.SelectedIndex;
         if (idx >= 0 && idx < this.subListOptions.Count)
         {
           this.SubListIndex = this.subListOptions[idx].index;
           if (this.editor != null)
             this.editor.SubListIndex = this.SubListIndex;
-          this.RefreshGrids();
+          this.ShowChannelList(this.currentList); // rebuilds the columns ("Pr#" vs. "Fav #")
         }
       };
 
@@ -331,8 +346,7 @@ namespace ChanSort.Avalonia
       this.gridLeft.ContextMenu = this.CreateGridContextMenu(true);
       this.gridRight.ContextMenu = this.CreateGridContextMenu(false);
 
-      this.gridLeft.CellEditEnded += (_, _) => this.RefreshGridsDeferred();
-      this.gridRight.CellEditEnded += (_, _) => this.RefreshGridsDeferred();
+      this.gridLeft.CellEditEnded += (_, _) => { if (this.suppressEvents == 0) this.RefreshGridsDeferred(); };
 
       this.AddHandler(DragDrop.DragOverEvent, (_, e) =>
       {
@@ -346,6 +360,10 @@ namespace ChanSort.Avalonia
       });
 
       this.Closing += this.MainWindow_Closing;
+
+      // the toolbar and the top of the sidebar act as the window's title bar
+      foreach (var titleArea in new Control[] { this.toolbar, this.sidebarTitleArea })
+        titleArea.PointerPressed += this.TitleArea_PointerPressed;
     }
 
     private ContextMenu CreateGridContextMenu(bool left)
@@ -556,6 +574,7 @@ namespace ChanSort.Avalonia
         SuggestedStartLocation = folder
       });
       var path = files?.FirstOrDefault()?.TryGetLocalPath();
+      Log.Write("open file picker result: " + (path ?? "(cancelled)"));
       if (path == null)
         return;
       await this.LoadFile(path);
@@ -599,7 +618,7 @@ namespace ChanSort.Avalonia
       if (ser == null)
         return;
 
-      var listIndex = isReload ? this.tabLists.SelectedIndex : -1;
+      var listIndex = isReload ? this.lstLists.SelectedIndex : -1;
 
       this.serializer?.Dispose();
       ser.DataRoot.ValidateAfterLoad();
@@ -772,6 +791,7 @@ namespace ChanSort.Avalonia
         return;
       }
 
+      Log.Write("showing initial channel order prompt");
       var res = await Dialogs.ActionBox(this, "How would you like to start editing the channel list?", new List<(string, int)>
       {
         ("Use the current channel order of the TV", 1),
@@ -779,6 +799,7 @@ namespace ChanSort.Avalonia
         ("Start with an empty list and add channels one by one", 3),
       }, 1);
 
+      Log.Write("initial channel order prompt result: " + res);
       if (res == 1)
         this.dataRoot.ApplyCurrentProgramNumbers();
       else if (res == 2)
@@ -800,7 +821,7 @@ namespace ChanSort.Avalonia
       ++this.suppressEvents;
       try
       {
-        var tabs = new List<TabStripItem>();
+        var tabs = new List<SidebarItem>();
         this.mnuLists.Items.Clear();
         ChannelList mostChannels = null;
         int i = 0;
@@ -808,7 +829,7 @@ namespace ChanSort.Avalonia
         {
           if (list.Channels.Count == 0)
             continue;
-          tabs.Add(new TabStripItem { Content = list.Caption, Tag = list });
+          tabs.Add(new SidebarItem(list.ShortCaption ?? list.Caption, this.GetListIcon(list), list.Channels.Count(ch => ch.OldProgramNr != -1).ToString(), list));
           if (!list.IsMixedSourceFavoritesList && (mostChannels == null || list.Count > mostChannels.Count))
             mostChannels = list;
 
@@ -817,12 +838,12 @@ namespace ChanSort.Avalonia
           var mi = new NativeMenuItem(list.Caption);
           if (i < 9)
             mi.Gesture = new KeyGesture(Key.D1 + i, KeyModifiers.Alt | cmdKey);
-          mi.Click += (_, _) => this.tabLists.SelectedIndex = idx;
+          mi.Click += (_, _) => this.lstLists.SelectedIndex = idx;
           this.mnuLists.Items.Add(mi);
           ++i;
         }
 
-        this.tabLists.ItemsSource = tabs;
+        this.lstLists.ItemsSource = tabs;
         if (tabs.Count == 0)
         {
           this.ShowChannelList(null);
@@ -830,7 +851,7 @@ namespace ChanSort.Avalonia
         }
 
         var sel = selectIndex >= 0 && selectIndex < tabs.Count ? selectIndex : Math.Max(0, tabs.FindIndex(t => t.Tag == mostChannels));
-        this.tabLists.SelectedIndex = sel;
+        this.lstLists.SelectedIndex = sel;
         this.ShowChannelList((ChannelList)tabs[sel].Tag);
       }
       finally
@@ -884,7 +905,7 @@ namespace ChanSort.Avalonia
         {
           var mixed = this.dataRoot.MixedSourceFavorites;
           if (!(mixed && list.IsMixedSourceFavoritesList))
-            this.subListOptions.Add((0, "Program numbers"));
+            this.subListOptions.Add((0, "Program Numbers"));
           if (this.dataRoot.SortedFavorites && !(mixed && !list.IsMixedSourceFavoritesList))
           {
             var favCount = Math.Min(this.serializer.Features.MaxFavoriteLists, 26);
@@ -894,16 +915,16 @@ namespace ChanSort.Avalonia
         }
 
         if (this.subListOptions.Count == 0)
-          this.subListOptions.Add((0, "Program numbers"));
+          this.subListOptions.Add((0, "Program Numbers"));
 
-        this.cbSubList.ItemsSource = this.subListOptions.Select(o => o.caption).ToList();
+        this.lstSubLists.ItemsSource = this.subListOptions.Select(o => new SidebarItem(o.caption, this.Icon(o.index == 0 ? "IconNumbered" : "IconStar"), null, o.index)).ToList();
         var sel = this.subListOptions.FindIndex(o => o.index == this.SubListIndex);
         if (sel < 0) sel = 0;
-        this.cbSubList.SelectedIndex = sel;
+        this.lstSubLists.SelectedIndex = sel;
         this.SubListIndex = this.subListOptions[sel].index;
         if (this.editor != null)
           this.editor.SubListIndex = this.SubListIndex;
-        this.cbSubList.IsVisible = this.lblSubList.IsVisible = this.subListOptions.Count > 1;
+        this.lstSubLists.IsVisible = this.lblSubList.IsVisible = this.subListOptions.Count > 1;
       }
       finally
       {
@@ -944,6 +965,7 @@ namespace ChanSort.Avalonia
         return;
       }
 
+      this.EndPendingEdits();
       var leftSel = (selectLeft ?? this.SelectedChannels(this.gridLeft)).ToList();
       var rightSel = (selectRight ?? this.SelectedChannels(this.gridRight)).ToList();
 
@@ -975,6 +997,35 @@ namespace ChanSort.Avalonia
       Select(this.gridLeft, leftSel);
       Select(this.gridRight, rightSel);
       this.UpdateUiState();
+    }
+
+    /// <summary>
+    /// DataGridCollectionView.Refresh() throws while a cell is being edited, so any pending edit must be committed first
+    /// </summary>
+    private void EndPendingEdits()
+    {
+      foreach (var (grid, view) in new[] { (this.gridLeft, this.leftView), (this.gridRight, this.rightView) })
+      {
+        if (view == null)
+          continue;
+        if (view.IsEditingItem || view.IsAddingNew)
+        {
+          ++this.suppressEvents;
+          try
+          {
+            if (!grid.CommitEdit())
+              grid.CancelEdit();
+          }
+          finally
+          {
+            --this.suppressEvents;
+          }
+        }
+        if (view.IsEditingItem)
+          view.CommitEdit();
+        if (view.IsAddingNew)
+          view.CancelNew();
+      }
     }
 
     private void RefreshGridsDeferred()
@@ -1259,6 +1310,7 @@ namespace ChanSort.Avalonia
         SuggestedStartLocation = folder
       });
       var path = files?.FirstOrDefault()?.TryGetLocalPath();
+      Log.Write("reference list picker result: " + (path ?? "(cancelled)"));
       if (path == null)
         return;
       await this.ApplyReferenceFile(path);
@@ -1296,7 +1348,7 @@ namespace ChanSort.Avalonia
         }
 
         this.dataRoot.NeedsSaving = true;
-        var listIndex = this.tabLists.SelectedIndex;
+        var listIndex = this.lstLists.SelectedIndex;
         this.FillChannelListTabs(listIndex);
         this.RefreshGrids();
 
@@ -1557,10 +1609,17 @@ namespace ChanSort.Avalonia
       foreach (var b in new[] { this.btnUp, this.btnDown, this.btnRemove, this.btnSetNr, this.btnSortAz, this.btnRenum, this.btnAdd, this.btnAddAll })
         b.IsEnabled = editable;
 
-      var title = "ChanSort";
-      if (!string.IsNullOrEmpty(this.currentFile))
-        title += " – " + Path.GetFileName(this.currentFile) + (this.dataRoot?.NeedsSaving == true ? " •" : "");
-      this.Title = title;
+      var edited = this.dataRoot?.NeedsSaving == true;
+      if (string.IsNullOrEmpty(this.currentFile))
+      {
+        this.Title = "ChanSort";
+        this.lblSubtitle.Text = "No channel list opened";
+      }
+      else
+      {
+        this.Title = "ChanSort – " + Path.GetFileName(this.currentFile) + (edited ? " — Edited" : "");
+        this.lblSubtitle.Text = Path.GetFileName(this.currentFile) + (edited ? " — Edited" : "");
+      }
       this.UpdateStatus();
     }
 
@@ -1569,20 +1628,23 @@ namespace ChanSort.Avalonia
       if (this.currentList == null)
       {
         this.lblStatusRight.Text = "";
+        this.lblLeftCount.Text = this.lblRightCount.Text = "";
         return;
       }
       var sorted = this.leftView?.Count ?? 0;
       var total = this.currentList.Channels.Count;
-      var ro = this.currentList.ReadOnly ? "  |  read-only (predefined list)" : "";
-      var tvModel = string.IsNullOrEmpty(this.currentPlugin?.PluginName) ? "" : this.currentPlugin.PluginName + "  |  ";
-      this.lblStatusRight.Text = $"{tvModel}{sorted} sorted / {total} channels  |  selected: {this.gridLeft.SelectedItems.Count} left, {this.gridRight.SelectedItems.Count} right{ro}";
-      if (this.serializer != null && this.lblStatus.Text?.StartsWith("Open a channel") == true)
-        this.lblStatus.Text = this.currentFile;
+      string Selected(DataGrid g) => g.SelectedItems.Count > 1 ? $" · {g.SelectedItems.Count} selected" : "";
+      this.lblLeftCount.Text = sorted + Selected(this.gridLeft);
+      this.lblRightCount.Text = total + Selected(this.gridRight);
+      this.lblStatusRight.Text = (this.currentPlugin?.PluginName ?? "") + (this.currentList.ReadOnly ? "\nRead-only list (predefined by the TV)" : "");
+      if (this.serializer != null && this.lblStatus.Text?.StartsWith("Open the channel") == true)
+        this.lblStatus.Text = "";
     }
 
     private void SetBusy(string message)
     {
       this.busyOverlay.IsVisible = message != null;
+      this.busyProgress.IsIndeterminate = message != null; // an indeterminate progress bar keeps animating (and using CPU) even when hidden
       if (message != null)
         this.lblBusy.Text = message;
     }
@@ -1593,15 +1655,146 @@ namespace ChanSort.Avalonia
 
     private async Task TryExecute(Func<Task> action)
     {
+      if (this.IsSheetOpen)
+        return;
       try
       {
         await action();
       }
       catch (Exception ex)
       {
+        Log.Write("Error: " + ex);
         this.SetBusy(null);
         await Dialogs.ShowText(this, "Error", ex.ToString(), true);
       }
+    }
+
+    #endregion
+
+    #region SidebarItem, icons
+
+    public sealed class SidebarItem
+    {
+      public SidebarItem(string caption, Geometry icon, string count, object tag)
+      {
+        this.Caption = caption;
+        this.Icon = icon;
+        this.Count = count;
+        this.Tag = tag;
+      }
+
+      public string Caption { get; }
+      public Geometry Icon { get; }
+      public string Count { get; }
+      public object Tag { get; }
+    }
+
+    private Geometry Icon(string key) => this.TryFindResource(key, out var res) ? res as Geometry : null;
+
+    private Geometry GetListIcon(ChannelList list)
+    {
+      var src = list.SignalSource;
+      if (list.IsMixedSourceFavoritesList)
+        return this.Icon("IconStar");
+      if ((src & SignalSource.MaskTvRadioData) == SignalSource.Radio)
+        return this.Icon("IconRadio");
+      if ((src & SignalSource.MaskBcastSystem) == SignalSource.Ip)
+        return this.Icon("IconWeb");
+      if ((src & SignalSource.MaskBcastMedium) == SignalSource.Sat)
+        return this.Icon("IconSatellite");
+      return this.Icon("IconTv");
+    }
+
+    #endregion
+
+    #region Title bar: dragging, zooming, transparency
+
+    private void TitleArea_PointerPressed(object sender, PointerPressedEventArgs e)
+    {
+      if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
+        return;
+      if (e.Source is Visual v && (v is Button || v.FindAncestorOfType<Button>() != null))
+        return;
+      if (e.ClickCount == 2)
+        this.WindowState = this.WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
+      else
+        this.BeginMoveDrag(e);
+    }
+
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+      base.OnPropertyChanged(change);
+      // without window transparency (vibrancy) the window needs an opaque background
+      if (change.Property == ActualTransparencyLevelProperty && OperatingSystem.IsMacOS())
+      {
+        if (this.ActualTransparencyLevel == WindowTransparencyLevel.None)
+          this[!BackgroundProperty] = new global::Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("CsWindowBackground");
+        else
+          this.Background = Brushes.Transparent;
+      }
+    }
+
+    #endregion
+
+    #region Sheets
+
+    private readonly List<(Control overlay, IInputElement previousFocus)> openSheets = new();
+
+    public bool IsSheetOpen => this.openSheets.Count > 0;
+
+    internal Panel SheetHost => this.sheetHost;
+
+    /// <summary>
+    /// Shows a dialog as a macOS style sheet that slides out below the toolbar. Returns a handle for CloseSheet()
+    /// </summary>
+    internal object ShowSheet(Control content, double width, Control focus)
+    {
+      var top = this.toolbar.TranslatePoint(new Point(0, this.toolbar.Bounds.Height), this)?.Y ?? 52;
+      var card = new Border
+      {
+        Classes = { "sheet" },
+        Width = Math.Min(width, Math.Max(320, this.Bounds.Width - 60)),
+        MaxHeight = Math.Max(200, this.Bounds.Height - top - 40),
+        HorizontalAlignment = global::Avalonia.Layout.HorizontalAlignment.Center,
+        VerticalAlignment = global::Avalonia.Layout.VerticalAlignment.Top,
+        Margin = new Thickness(0, top + 6, 0, 0),
+        Child = content,
+        Opacity = 0,
+        RenderTransform = TransformOperations.Parse("translateY(-14px)"),
+        Transitions = new Transitions
+        {
+          new DoubleTransition { Property = OpacityProperty, Duration = TimeSpan.FromMilliseconds(160) },
+          new TransformOperationsTransition { Property = RenderTransformProperty, Duration = TimeSpan.FromMilliseconds(180), Easing = new global::Avalonia.Animation.Easings.CubicEaseOut() }
+        }
+      };
+      var overlay = new Panel { Children = { card } };
+      overlay[!Panel.BackgroundProperty] = new global::Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("CsDim");
+
+      var previousFocus = this.FocusManager?.GetFocusedElement();
+      this.openSheets.Add((overlay, previousFocus));
+      this.sheetHost.Children.Add(overlay);
+      this.sheetHost.IsVisible = true;
+
+      Dispatcher.UIThread.Post(() =>
+      {
+        card.Opacity = 1;
+        card.RenderTransform = TransformOperations.Parse("translateY(0px)");
+        (focus ?? content).Focus();
+      }, DispatcherPriority.Background);
+      return overlay;
+    }
+
+    internal void CloseSheet(object handle)
+    {
+      var idx = this.openSheets.FindIndex(s => s.overlay == handle);
+      if (idx < 0)
+        return;
+      var (overlay, previousFocus) = this.openSheets[idx];
+      this.openSheets.RemoveAt(idx);
+      this.sheetHost.Children.Remove(overlay);
+      this.sheetHost.IsVisible = this.openSheets.Count > 0;
+      if (this.openSheets.Count == 0)
+        previousFocus?.Focus();
     }
 
     #endregion

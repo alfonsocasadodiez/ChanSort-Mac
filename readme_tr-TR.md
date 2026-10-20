@@ -79,8 +79,12 @@ Sistem Gereksinimleri
 Son olarak Ubuntu 24.10, wine-9.0, winetricks 20240105 ile test edildi
 
 **Mac** (yerel uygulama):  
+
+![macOS için ChanSort](docs/macos/chansort-mac-light.png)
+
+- macOS tarzı arayüz: kanal listeleri ve favori listeleri için kenar çubuğu, araç çubuğu, arama alanları, açık ve koyu görünüm
 - macOS 12 (Monterey) veya üzeri, Apple çipli (M1/M2/M3/M4…) veya Intel Mac'ler. .NET kurulumu gerekmez.
-- [macOS sürüm sayfasından](https://github.com/alfonsocasadodiez/ChanSort/releases/latest) Mac'inize uygun `.dmg` (veya `.zip`) dosyasını indirin:
+- [macOS sürüm sayfasından](https://github.com/alfonsocasadodiez/ChanSort-Mac/releases/latest) Mac'inize uygun `.dmg` (veya `.zip`) dosyasını indirin:
   Apple çipli Mac'ler için `..._macOS_AppleSilicon.dmg`, Intel Mac'ler için `..._macOS_Intel.dmg`
 - .dmg dosyasını açın ve ChanSort'u Uygulamalar klasörüne sürükleyin.
 - Uygulama Apple tarafından onaylanmadığı (notarize edilmediği) için ilk açılışta Gatekeeper tarafından engellenir. İzin vermek için

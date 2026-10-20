@@ -8,16 +8,20 @@ namespace ChanSort.Avalonia
     [STAThread]
     public static void Main(string[] args)
     {
+      Log.Write("--- ChanSort started, args: " + string.Join(" ", args));
+      AppDomain.CurrentDomain.UnhandledException += (_, e) => Log.Write("Unhandled exception: " + e.ExceptionObject);
+      System.Threading.Tasks.TaskScheduler.UnobservedTaskException += (_, e) => Log.Write("Unobserved task exception: " + e.Exception);
       BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
     }
 
     public static AppBuilder BuildAvaloniaApp()
     {
-      return AppBuilder.Configure<App>()
+      var builder = AppBuilder.Configure<App>()
         .UsePlatformDetect()
-        .WithInterFont()
         .With(new MacOSPlatformOptions { DisableDefaultApplicationMenuItems = false })
         .LogToTrace();
+      // macOS: use the system font (San Francisco); elsewhere the bundled Inter font gives a consistent look
+      return OperatingSystem.IsMacOS() ? builder : builder.WithInterFont();
     }
   }
 }

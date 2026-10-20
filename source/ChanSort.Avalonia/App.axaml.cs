@@ -15,6 +15,12 @@ namespace ChanSort.Avalonia
 
     public override void OnFrameworkInitializationCompleted()
     {
+      global::Avalonia.Threading.Dispatcher.UIThread.UnhandledException += (_, e) =>
+      {
+        Log.Write("UI thread exception: " + e.Exception);
+        e.Handled = true; // keep the app running, the error is shown/logged
+      };
+
       if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
       {
         var main = new MainWindow();

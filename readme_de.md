@@ -4,7 +4,7 @@ Links
 [![DE](https://chansort.com/img/flag_de_24.png)](https://github.com/PredatH0r/ChanSort/blob/master/readme_de.md)
 [![PL](https://chansort.com/img/flag_pl_16.png)](https://github.com/PredatH0r/ChanSort/blob/master/readme_pl.md)
 [![TR](https://chansort.com/img/flag_tr_16.png)](https://github.com/PredatH0r/ChanSort/blob/master/readme_tr-TR.md) |
-[Download (Windows)](https://github.com/PredatH0r/ChanSort/releases) | [Download (macOS)](https://github.com/alfonsocasadodiez/ChanSort/releases/latest) | 
+[Download (Windows)](https://github.com/PredatH0r/ChanSort/releases) | [Download (macOS)](https://github.com/alfonsocasadodiez/ChanSort-Mac/releases/latest) | 
 [Dokumentation](https://github.com/PredatH0r/ChanSort/wiki/Home-(de)) |
 [Forum](https://github.com/PredatH0r/ChanSort/issues) | 
 [E-Mail](mailto:horst@beham.biz)
@@ -86,8 +86,12 @@ Zuletzt getestet mit Ubuntu 24.10, wine-9.0, winetricks 20240105
 Oder mit Docker: https://github.com/PredatH0r/ChanSort/issues/285
 
 **Mac** (native App):  
+
+![ChanSort für macOS](docs/macos/chansort-mac-light.png)
+
+- Oberfläche im macOS-Stil: Seitenleiste mit den Senderlisten und Favoritenlisten, Symbolleiste, Suchfelder, Dialoge als Sheets, helles und dunkles Erscheinungsbild
 - macOS 12 (Monterey) oder neuer, auf Macs mit Apple-Chip (M1/M2/M3/M4…) oder Intel-Prozessor. Eine .NET-Installation ist nicht nötig.
-- Download der passenden `.dmg`- (oder `.zip`-) Datei von der [macOS Release-Seite](https://github.com/alfonsocasadodiez/ChanSort/releases/latest):
+- Download der passenden `.dmg`- (oder `.zip`-) Datei von der [macOS Release-Seite](https://github.com/alfonsocasadodiez/ChanSort-Mac/releases/latest):
   `..._macOS_AppleSilicon.dmg` für Macs mit Apple-Chip, `..._macOS_Intel.dmg` für Intel-Macs
 - Die .dmg öffnen und ChanSort in den Ordner "Programme" ziehen.
 - Die App ist nicht von Apple notarisiert, daher blockiert Gatekeeper den ersten Start. Freigabe entweder

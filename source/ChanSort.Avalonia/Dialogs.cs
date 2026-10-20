@@ -6,16 +6,20 @@ using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.Media.Imaging;
+using Avalonia.Platform;
 using Avalonia.Threading;
 using ChanSort.Api;
 
 namespace ChanSort.Avalonia
 {
   /// <summary>
-  /// Simple, code-only dialogs (message box, action box, text viewer, input box)
+  /// Dialogs in the style of macOS alerts. They are shown as sheets inside the main window
+  /// (or as a separate window when the main window isn't available).
   /// </summary>
   public static class Dialogs
   {
@@ -39,43 +43,129 @@ namespace ChanSort.Avalonia
 
     #endregion
 
-    #region CreateDialog()
-
-    private static Window CreateDialog(string title, double width)
-    {
-      return new Window
-      {
-        Title = string.IsNullOrEmpty(title) ? "ChanSort" : title,
-        Width = width,
-        SizeToContent = SizeToContent.Height,
-        CanResize = false,
-        WindowStartupLocation = WindowStartupLocation.CenterOwner,
-        ShowInTaskbar = false,
-      };
-    }
+    #region ShowModal()
 
     private static Window Owner(Window owner)
     {
       if (owner != null)
         return owner;
-      if (Application.Current?.ApplicationLifetime is global::Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime d)
+      if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime d)
         return d.MainWindow;
       return null;
     }
 
-    private static async Task ShowDialog(Window dlg, Window owner)
+    /// <summary>
+    /// Shows the content created by build() modally. build() receives the function that closes the dialog
+    /// and returns the content and the control that should get the keyboard focus.
+    /// </summary>
+    private static async Task ShowModal(Window owner, string title, double width, Func<Action, (Control content, Control focus)> build)
     {
       owner = Owner(owner);
-      if (owner != null && owner.IsVisible)
-        await dlg.ShowDialog(owner);
+      var tcs = new TaskCompletionSource<bool>();
+      Action close = null;
+      var (content, focus) = build(() => close?.Invoke());
+
+      Log.Write($"dialog '{title}' opening");
+      if (owner is MainWindow mw && mw.IsVisible)
+      {
+        var handle = mw.ShowSheet(content, width, focus);
+        close = () =>
+        {
+          mw.CloseSheet(handle);
+          Log.Write($"dialog '{title}' closed");
+          tcs.TrySetResult(true);
+        };
+      }
       else
       {
-        var tcs = new TaskCompletionSource<bool>();
-        dlg.Closed += (_, _) => tcs.TrySetResult(true);
-        dlg.WindowStartupLocation = WindowStartupLocation.CenterScreen;
-        dlg.Show();
-        await tcs.Task;
+        var dlg = new Window
+        {
+          Title = string.IsNullOrEmpty(title) ? "ChanSort" : title,
+          Width = width,
+          SizeToContent = SizeToContent.Height,
+          CanResize = false,
+          ShowInTaskbar = false,
+          WindowStartupLocation = owner != null ? WindowStartupLocation.CenterOwner : WindowStartupLocation.CenterScreen,
+          Content = new Border { Padding = new Thickness(20), Child = content }
+        };
+        dlg[!Window.BackgroundProperty] = new global::Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("CsSheetBackground");
+        close = () => dlg.Close();
+        dlg.Closed += (_, _) =>
+        {
+          Log.Write($"dialog '{title}' closed");
+          tcs.TrySetResult(true);
+        };
+        dlg.Opened += (_, _) => (focus ?? content).Focus();
+        if (owner != null && owner.IsVisible)
+          _ = dlg.ShowDialog(owner);
+        else
+          dlg.Show();
       }
+      await tcs.Task;
+    }
+
+    #endregion
+
+    #region Building blocks
+
+    private static Control AppIcon(double size = 56)
+    {
+      try
+      {
+        using var stream = AssetLoader.Open(new Uri("avares://ChanSort/Assets/icon.png"));
+        return new Image { Source = new Bitmap(stream), Width = size, Height = size, VerticalAlignment = VerticalAlignment.Top };
+      }
+      catch
+      {
+        return new Panel { Width = size, Height = size };
+      }
+    }
+
+    private static Button PushButton(string text, bool isDefault, bool isCancel, Action onClick)
+    {
+      var btn = new Button
+      {
+        Content = text,
+        MinWidth = 76,
+        HorizontalContentAlignment = HorizontalAlignment.Center,
+        IsDefault = isDefault,
+        IsCancel = isCancel,
+      };
+      if (isDefault)
+        btn.Classes.Add("accent");
+      btn.Click += (_, _) => onClick();
+      return btn;
+    }
+
+    /// <summary>
+    /// macOS alert layout: app icon on the left, bold message and informative text on the right, buttons below
+    /// </summary>
+    private static Control AlertLayout(string title, string text, Control extra, Control buttons)
+    {
+      var right = new StackPanel { Spacing = 8 };
+      if (!string.IsNullOrEmpty(title))
+        right.Children.Add(new SelectableTextBlock { Text = title, Classes = { "alertTitle" } });
+      if (!string.IsNullOrEmpty(text))
+      {
+        right.Children.Add(new ScrollViewer
+        {
+          MaxHeight = 320,
+          HorizontalScrollBarVisibility = global::Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled,
+          Content = new SelectableTextBlock { Text = text, TextWrapping = TextWrapping.Wrap, FontSize = 12 }
+        });
+      }
+      if (extra != null)
+        right.Children.Add(extra);
+      buttons.Margin = new Thickness(0, 10, 0, 0);
+      right.Children.Add(buttons);
+
+      var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*") };
+      var icon = AppIcon();
+      icon.Margin = new Thickness(0, 0, 16, 0);
+      grid.Children.Add(icon);
+      Grid.SetColumn(right, 1);
+      grid.Children.Add(right);
+      return grid;
     }
 
     #endregion
@@ -84,43 +174,50 @@ namespace ChanSort.Avalonia
 
     public static async Task<View.DialogResult> MessageBox(Window owner, string msg, string caption = "", View.MessageBoxButtons buttons = View.MessageBoxButtons.OK, View.MessageBoxIcon icon = View.MessageBoxIcon.None)
     {
-      var dlg = CreateDialog(caption, 480);
-      var result = View.DialogResult.Cancel;
-      if (buttons == View.MessageBoxButtons.OK)
-        result = View.DialogResult.OK;
-      else if (buttons == View.MessageBoxButtons.YesNo)
-        result = View.DialogResult.No;
-
-      var buttonPanel = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, HorizontalAlignment = HorizontalAlignment.Right };
-      void AddButton(string text, View.DialogResult res, bool isDefault = false, bool isCancel = false)
+      var result = buttons switch
       {
-        var btn = new Button { Content = text, MinWidth = 80, HorizontalContentAlignment = HorizontalAlignment.Center, IsDefault = isDefault, IsCancel = isCancel };
-        btn.Click += (_, _) => { result = res; dlg.Close(); };
-        buttonPanel.Children.Add(btn);
+        View.MessageBoxButtons.OK => View.DialogResult.OK,
+        View.MessageBoxButtons.YesNo => View.DialogResult.No,
+        _ => View.DialogResult.Cancel
+      };
+
+      // like NSAlert: a short message becomes the bold title, a long one is shown as informative text below the caption
+      msg = (msg ?? "").Trim();
+      string title, text;
+      if (msg.Length <= 160 && !msg.Contains('\n'))
+      {
+        title = msg;
+        text = null;
+      }
+      else
+      {
+        title = string.IsNullOrEmpty(caption) ? "ChanSort" : caption;
+        text = msg;
       }
 
-      switch (buttons)
+      await ShowModal(owner, caption, 460, close =>
       {
-        case View.MessageBoxButtons.OK: AddButton("OK", View.DialogResult.OK, true, true); break;
-        case View.MessageBoxButtons.OKCancel: AddButton("Cancel", View.DialogResult.Cancel, false, true); AddButton("OK", View.DialogResult.OK, true); break;
-        case View.MessageBoxButtons.YesNo: AddButton("No", View.DialogResult.No, false, true); AddButton("Yes", View.DialogResult.Yes, true); break;
-        case View.MessageBoxButtons.YesNoCancel: AddButton("Cancel", View.DialogResult.Cancel, false, true); AddButton("No", View.DialogResult.No); AddButton("Yes", View.DialogResult.Yes, true); break;
-        case View.MessageBoxButtons.RetryCancel: AddButton("Cancel", View.DialogResult.Cancel, false, true); AddButton("Retry", View.DialogResult.Retry, true); break;
-        case View.MessageBoxButtons.AbortRetryIgnore: AddButton("Abort", View.DialogResult.Abort, false, true); AddButton("Retry", View.DialogResult.Retry); AddButton("Ignore", View.DialogResult.Ignore, true); break;
-      }
+        var panel = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, HorizontalAlignment = HorizontalAlignment.Right };
+        Button defaultButton = null;
+        void Add(string label, View.DialogResult res, bool isDefault = false, bool isCancel = false)
+        {
+          var b = PushButton(label, isDefault, isCancel, () => { Log.Write($"message box: clicked '{label}'"); result = res; close(); });
+          panel.Children.Add(b);
+          if (isDefault)
+            defaultButton = b;
+        }
 
-      var body = new DockPanel { Margin = new Thickness(16), LastChildFill = true };
-      DockPanel.SetDock(buttonPanel, Dock.Bottom);
-      buttonPanel.Margin = new Thickness(0, 16, 0, 0);
-      body.Children.Add(buttonPanel);
-      body.Children.Add(new ScrollViewer
-      {
-        MaxHeight = 500,
-        Content = new SelectableTextBlock { Text = msg ?? "", TextWrapping = TextWrapping.Wrap }
+        switch (buttons)
+        {
+          case View.MessageBoxButtons.OK: Add("OK", View.DialogResult.OK, true, true); break;
+          case View.MessageBoxButtons.OKCancel: Add("Cancel", View.DialogResult.Cancel, false, true); Add("OK", View.DialogResult.OK, true); break;
+          case View.MessageBoxButtons.YesNo: Add("No", View.DialogResult.No, false, true); Add("Yes", View.DialogResult.Yes, true); break;
+          case View.MessageBoxButtons.YesNoCancel: Add("Cancel", View.DialogResult.Cancel, false, true); Add("No", View.DialogResult.No); Add("Yes", View.DialogResult.Yes, true); break;
+          case View.MessageBoxButtons.RetryCancel: Add("Cancel", View.DialogResult.Cancel, false, true); Add("Retry", View.DialogResult.Retry, true); break;
+          case View.MessageBoxButtons.AbortRetryIgnore: Add("Abort", View.DialogResult.Abort, false, true); Add("Retry", View.DialogResult.Retry); Add("Ignore", View.DialogResult.Ignore, true); break;
+        }
+        return (AlertLayout(title, text, null, panel), defaultButton);
       });
-      dlg.Content = body;
-
-      await ShowDialog(dlg, owner);
       return result;
     }
 
@@ -130,32 +227,32 @@ namespace ChanSort.Avalonia
 
     public static async Task ShowText(Window owner, string title, string text, bool monospace = false)
     {
-      var dlg = new Window
+      await ShowModal(owner, title, 760, close =>
       {
-        Title = title ?? "ChanSort",
-        Width = 760,
-        Height = 520,
-        WindowStartupLocation = WindowStartupLocation.CenterOwner,
-        ShowInTaskbar = false
-      };
-      var ok = new Button { Content = "OK", MinWidth = 80, IsDefault = true, IsCancel = true, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 12, 0, 0) };
-      ok.Click += (_, _) => dlg.Close();
-      var box = new TextBox
-      {
-        Text = text ?? "",
-        IsReadOnly = true,
-        AcceptsReturn = true,
-        TextWrapping = monospace ? TextWrapping.NoWrap : TextWrapping.Wrap,
-      };
-      if (monospace)
-        box.FontFamily = new FontFamily("Menlo, Consolas, monospace");
-      ScrollViewer.SetHorizontalScrollBarVisibility(box, global::Avalonia.Controls.Primitives.ScrollBarVisibility.Auto);
-      var panel = new DockPanel { Margin = new Thickness(12) };
-      DockPanel.SetDock(ok, Dock.Bottom);
-      panel.Children.Add(ok);
-      panel.Children.Add(box);
-      dlg.Content = panel;
-      await ShowDialog(dlg, owner);
+        var ok = PushButton("OK", true, true, close);
+        ok.HorizontalAlignment = HorizontalAlignment.Right;
+        ok.Margin = new Thickness(0, 12, 0, 0);
+        var box = new TextBox
+        {
+          Text = text ?? "",
+          IsReadOnly = true,
+          AcceptsReturn = true,
+          TextWrapping = monospace ? TextWrapping.NoWrap : TextWrapping.Wrap,
+          Height = 380,
+          FontSize = 12,
+        };
+        if (monospace)
+          box.FontFamily = new FontFamily("Menlo, Consolas, monospace");
+        ScrollViewer.SetHorizontalScrollBarVisibility(box, global::Avalonia.Controls.Primitives.ScrollBarVisibility.Auto);
+        var panel = new DockPanel();
+        var header = new TextBlock { Text = title ?? "ChanSort", Classes = { "alertTitle" }, Margin = new Thickness(0, 0, 0, 10) };
+        DockPanel.SetDock(header, Dock.Top);
+        DockPanel.SetDock(ok, Dock.Bottom);
+        panel.Children.Add(header);
+        panel.Children.Add(ok);
+        panel.Children.Add(box);
+        return (panel, ok);
+      });
     }
 
     public static string HtmlToText(string html)
@@ -178,20 +275,16 @@ namespace ChanSort.Avalonia
 
     public static async Task<string> InputBox(Window owner, string title, string prompt, string value)
     {
-      var dlg = CreateDialog(title, 420);
       string result = null;
-      var box = new TextBox { Text = value ?? "" };
-      var ok = new Button { Content = "OK", MinWidth = 80, IsDefault = true };
-      var cancel = new Button { Content = "Cancel", MinWidth = 80, IsCancel = true };
-      ok.Click += (_, _) => { result = box.Text; dlg.Close(); };
-      cancel.Click += (_, _) => dlg.Close();
-      var panel = new StackPanel { Margin = new Thickness(16), Spacing = 8 };
-      panel.Children.Add(new TextBlock { Text = prompt, TextWrapping = TextWrapping.Wrap });
-      panel.Children.Add(box);
-      panel.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 8, 0, 0), Children = { cancel, ok } });
-      dlg.Content = panel;
-      dlg.Opened += (_, _) => { box.Focus(); box.SelectAll(); };
-      await ShowDialog(dlg, owner);
+      await ShowModal(owner, title, 420, close =>
+      {
+        var box = new TextBox { Text = value ?? "" };
+        box.AttachedToVisualTree += (_, _) => Dispatcher.UIThread.Post(box.SelectAll, DispatcherPriority.Background);
+        var buttons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, HorizontalAlignment = HorizontalAlignment.Right };
+        buttons.Children.Add(PushButton("Cancel", false, true, close));
+        buttons.Children.Add(PushButton("OK", true, false, () => { result = box.Text; close(); }));
+        return (AlertLayout(title, prompt, box, buttons), box);
+      });
       return result;
     }
 
@@ -200,36 +293,44 @@ namespace ChanSort.Avalonia
     #region ActionBox()
 
     /// <summary>
-    /// Shows a message and a vertical list of buttons. Returns the result value of the selected action or cancelResult.
+    /// Shows a message and a vertical list of buttons (like a macOS alert with many options).
+    /// Returns the result value of the selected action or cancelResult.
     /// </summary>
     public static async Task<int> ActionBox(Window owner, string message, IList<(string text, int result)> actions, int cancelResult)
     {
-      var dlg = CreateDialog("ChanSort", 520);
       var result = cancelResult;
-      var panel = new StackPanel { Margin = new Thickness(16), Spacing = 6 };
-      if (!string.IsNullOrEmpty(message))
-        panel.Children.Add(new SelectableTextBlock { Text = message, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 10) });
-      bool first = true;
-      foreach (var action in actions)
+      await ShowModal(owner, "ChanSort", 480, close =>
       {
-        var btn = new Button
+        var buttons = new StackPanel { Spacing = 6 };
+        Button first = null;
+        foreach (var action in actions)
         {
-          Content = new TextBlock { Text = action.text, TextWrapping = TextWrapping.Wrap },
-          HorizontalAlignment = HorizontalAlignment.Stretch,
-          HorizontalContentAlignment = HorizontalAlignment.Left,
-          Padding = new Thickness(12, 8),
-          IsDefault = first,
+          var res = action.result;
+          var isCancel = res == cancelResult || action.text == "Cancel";
+          var btn = PushButton(action.text, first == null, false, () =>
+          {
+            Log.Write($"action box: clicked '{action.text}'");
+            result = res;
+            close();
+          });
+          btn.Content = new TextBlock { Text = action.text, TextWrapping = TextWrapping.Wrap, TextAlignment = TextAlignment.Center };
+          btn.HorizontalAlignment = HorizontalAlignment.Stretch;
+          btn.Padding = new Thickness(12, 5);
+          first ??= btn;
+          buttons.Children.Add(btn);
+        }
+
+        var content = AlertLayout(message, null, null, buttons);
+        content.KeyDown += (_, e) =>
+        {
+          if (e.Key == Key.Escape)
+          {
+            e.Handled = true;
+            close();
+          }
         };
-        if (first)
-          btn.Classes.Add("accent");
-        first = false;
-        var res = action.result;
-        btn.Click += (_, _) => { result = res; dlg.Close(); };
-        panel.Children.Add(btn);
-      }
-      dlg.KeyDown += (_, e) => { if (e.Key == Key.Escape) dlg.Close(); };
-      dlg.Content = panel;
-      await ShowDialog(dlg, owner);
+        return (content, first);
+      });
       return result;
     }
 

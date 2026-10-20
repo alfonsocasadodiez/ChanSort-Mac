@@ -1,6 +1,13 @@
 ﻿ChanSort Change Log 
 ===================
 
+2026-10-20 (macOS update)
+- macOS: new user interface in the style of native Mac apps: sidebar with channel lists and favorite lists,
+  unified toolbar, search fields, table button bars, dialogs as sheets, system font, light/dark appearance
+- macOS: fixed an error when adding a channel right after double-clicking it ("Refresh is not allowed during an AddNew or EditItem transaction")
+- macOS: reduced CPU usage while idle
+- macOS: diagnostic log in ~/Library/Logs/ChanSort/ChanSort.log
+
 2026-10-20 (macOS)
 - NEW: native macOS version (Apple Silicon and Intel), based on a new cross-platform Avalonia UI and .NET 10.
   It uses the same file format loaders as the Windows version.
